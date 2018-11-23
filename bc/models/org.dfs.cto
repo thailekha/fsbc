@@ -1,0 +1,40 @@
+namespace org.dfs
+
+// Given a file guid, can trace back the old versions
+// transaction assets are just for the management level ?
+
+asset Data identified by guid {
+    o String guid
+    o String originalName
+    o String mimetype
+    --> DataOwner owner
+    --> Data lastVersion optional
+}
+
+// TODO: change to user
+participant DataOwner identified by username {
+    o String username
+    o String password
+}
+asset GetData identified by id {
+    o String id
+    o DateTime timestamp
+    --> DataOwner requester
+    --> Data data
+}
+asset PostData identified by id {
+    o String id
+    o DateTime timestamp
+    --> DataOwner owner
+    --> Data data
+}
+asset PutData identified by id {
+    o String id
+    o DateTime timestamp
+    --> DataOwner updater
+    --> Data oldData
+    --> Data newData
+}
+transaction foo {
+    o String detail
+}
