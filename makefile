@@ -41,3 +41,59 @@ install-yarn:
 	curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
 	echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
 	sudo apt-get update && sudo apt-get install --no-install-recommends yarn
+# ============
+# TESTS
+# ============
+test-register:
+	curl -v --request POST \
+		--url http://$(server):9000/data/register \
+		--header 'Content-Type: application/json' \
+		--header 'cache-control: no-cache' \
+		--data '{"username": "tom","password": "123"}'
+login:
+	$(eval TOKEN=$(shell \
+		curl --silent --request POST \
+			--url http://$(server):9000/data/login \
+			--header 'Content-Type: application/json' \
+			--header 'cache-control: no-cache' \
+			--data '{"username": "tom","password": "123"}' | jq  --raw-output '.token'))
+post:
+	$(eval GUID=$(shell \
+		curl --silent --request POST \
+			--url http://$(server):9000/data \
+			--header 'Authorization: Bearer $(TOKEN)' \
+			--header 'Content-Type: application/json' \
+			--header 'cache-control: no-cache' \
+			--data '{"coffee":"latte","timestamp": "$(shell date +%s)"}' | jq  --raw-output '.globalUniqueID'))
+get:
+	$(eval RESPONSE=$(shell \
+		curl --silent --request GET \
+			--url http://$(server):9000/data/$(GUID) \
+			--header 'Authorization: Bearer $(TOKEN)' \
+			--header 'cache-control: no-cache'))
+put:
+	$(eval NEW_GUID=$(shell \
+		curl --silent --request PUT \
+			--url http://$(server):9000/data/$(GUID) \
+			--header 'Authorization: Bearer $(TOKEN)' \
+			--header 'Content-Type: application/json' \
+			--header 'cache-control: no-cache' \
+			--data '{"coffee":"mocha","timestamp": "$(shell date +%s)"}' | jq  --raw-output '.globalUniqueID'))
+trace:
+	$(eval TRACE=$(shell \
+		curl --silent --request GET \
+			--url http://$(server):9000/data/$(GUID)/trace \
+			--header 'Authorization: Bearer $(TOKEN)' \
+			--header 'cache-control: no-cache'))
+test-login: login
+	echo Login token: $(TOKEN)
+# can write multiline dependencies using backslash
+test-get: login get
+	echo $(RESPONSE)
+test-post: login post
+	echo GUID: $(GUID)
+test-put: login post put
+	echo OLD: $(GUID)
+	echo New: $(NEW_GUID)
+test-trace: login post put trace
+	echo TRACE: $(TRACE)
