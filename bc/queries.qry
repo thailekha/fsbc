@@ -1,0 +1,14 @@
+// To do access control: add dataowner identifier condition here
+query getData {
+  description: "Get Data asset by GUID"
+  statement: 
+    SELECT org.dfs.Data
+    WHERE (guid == _$guid)
+}
+
+query getDataOwner {
+  description: "Get DataOwner by username"
+  statement: 
+    SELECT org.dfs.DataOwner
+    WHERE (username == _$username)
+}

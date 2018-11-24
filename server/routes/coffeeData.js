@@ -81,8 +81,7 @@ router.post('/login', async function(req, res, next) {
     const password = req.body.password;
 
     await clientConnection.connect("admin@dfs");
-    const filteredParticipants = (await (await clientConnection.getParticipantRegistry('org.dfs.DataOwner')).getAll())
-      .filter(p => p.username === username);
+    const filteredParticipants = await clientConnection.query('getDataOwner', {username});;
     
     if (filteredParticipants.length !== 1) {
       throw `Cannot find user ${username}`;
@@ -107,8 +106,7 @@ router.get('/file/:id', async function(req, res, next) {
     const username = jwt.verify(token, 'secret').username;
     const requestedDataID = req.params.id;
     const businessNetworkDefinition = await clientConnection.connect("admin@dfs");
-    const requestedData = (await (await clientConnection.getAssetRegistry('org.dfs.Data')).getAll())
-      .filter(data => data.$identifier === requestedDataID && data.owner.$identifier === username);
+    const requestedData = await clientConnection.query('getData', {guid: requestedDataID});
 
     if (requestedData.length !== 1) {
       throw `Cannot find user ${username} or data ${requestedDataID}`;
@@ -136,8 +134,7 @@ router.post('/file', async function(req, res, next) {
     const token = req.header("Authorization").split('Bearer ')[1];
     const username = jwt.verify(token, 'secret').username;
     const businessNetworkDefinition = await clientConnection.connect("admin@dfs");
-    const filteredParticipants = (await (await clientConnection.getParticipantRegistry('org.dfs.DataOwner')).getAll())
-      .filter(p => p.username === username);
+    const filteredParticipants = await clientConnection.query('getDataOwner', {username});
 
     if (filteredParticipants.length !== 1) {
       throw `Cannot find user ${username}`;
@@ -177,23 +174,15 @@ router.get('/:id', async function(req, res, next) {
     const username = jwt.verify(token, 'secret').username;
     const requestedDataID = req.params.id;
     const businessNetworkDefinition = await clientConnection.connect("admin@dfs");
-    // const requestedData = (await (await clientConnection.getAssetRegistry('org.dfs.Data')).getAll())
-    //   .filter(data => data.$identifier === requestedDataID && data.owner.$identifier === username);
-
-    const requestedData = (await (await clientConnection.getAssetRegistry('org.dfs.Data')).getAll())
-      .filter(data => data.$identifier === requestedDataID);
+    const requestedData = await clientConnection.query('getData', {guid: requestedDataID});
 
     if (requestedData.length !== 1) {
-      throw `Cannot find user ${username} or data ${requestedDataID}`;
+      throw `Cannot find data ${requestedDataID}`;
     }
 
     const ipfs = pify(ipfsAPI(process.env.IPFS_HOST, '5001', {protocol: 'http'}));
     const ipfsResponse = await ipfs.files.cat(requestedData[0].guid);
     await submitGetData(username,requestedData[0].$identifier,businessNetworkDefinition);
-
-    if (requestedData[0].lastVersion) {
-      console.log('Last version', requestedData[0].lastVersion);
-    }
 
     res
       .json(JSON.parse(ipfsResponse.toString()));
@@ -208,8 +197,7 @@ router.post('/', async function(req, res, next) {
     const token = req.header("Authorization").split('Bearer ')[1];
     const username = jwt.verify(token, 'secret').username;
     const businessNetworkDefinition = await clientConnection.connect("admin@dfs");
-    const filteredParticipants = (await (await clientConnection.getParticipantRegistry('org.dfs.DataOwner')).getAll())
-      .filter(p => p.username === username);
+    const filteredParticipants = await clientConnection.query('getDataOwner', {username});
 
     if (filteredParticipants.length !== 1) {
       throw `Cannot find user ${username}`;
@@ -254,8 +242,7 @@ router.put('/:id', async function(req, res, next) {
     const requestedDataID = req.params.id;
     const businessNetworkDefinition = await clientConnection.connect("admin@dfs");
 
-    const filteredParticipants = (await (await clientConnection.getParticipantRegistry('org.dfs.DataOwner')).getAll())
-      .filter(p => p.username === username);
+    const filteredParticipants = await clientConnection.query('getDataOwner', {username});
 
     if (filteredParticipants.length !== 1) {
       throw `Cannot find user ${username}`;
@@ -263,8 +250,7 @@ router.put('/:id', async function(req, res, next) {
 
     const updater = filteredParticipants[0];
 
-    const requestedData = (await (await clientConnection.getAssetRegistry('org.dfs.Data')).getAll())
-      .filter(data => data.$identifier === requestedDataID);
+    const requestedData = await clientConnection.query('getData', {guid: requestedDataID});
 
     if (requestedData.length !== 1) {
       throw `Cannot find data ${requestedDataID}`;
@@ -300,8 +286,7 @@ router.get('/:id/trace', async function(req, res, next) {
     const username = jwt.verify(token, 'secret').username;
     const requestedDataID = req.params.id;
     const businessNetworkDefinition = await clientConnection.connect("admin@dfs");
-    const requestedData = (await (await clientConnection.getAssetRegistry('org.dfs.Data')).getAll())
-      .filter(data => data.$identifier === requestedDataID);
+    const requestedData = await clientConnection.query('getData', {guid: requestedDataID});
 
     if (requestedData.length !== 1) {
       throw `Cannot find user ${username} or data ${requestedDataID}`;
@@ -313,8 +298,7 @@ router.get('/:id/trace', async function(req, res, next) {
     while (point.lastVersion) {
       allVersionIDs.push(point.$identifier);
 
-      const oldData = (await (await clientConnection.getAssetRegistry('org.dfs.Data')).getAll())
-        .filter(data => data.$identifier === point.lastVersion.$identifier);
+      const oldData = await clientConnection.query('getData', {guid: point.lastVersion.$identifier});
 
       if (oldData.length !== 1) {
         throw `Could not trace data ${point.lastVersion.$identifier}`;
