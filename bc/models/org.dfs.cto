@@ -14,7 +14,8 @@ asset Data identified by guid {
 // TODO: change to user
 participant DataOwner identified by username {
     o String username
-    o String password
+    o String hashedPassword
+    o String salt
 }
 asset GetData identified by id {
     o String id

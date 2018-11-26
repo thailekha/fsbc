@@ -5,6 +5,7 @@ const path = require('path');
 const jwt = require('jsonwebtoken');
 const ipfsAPI = require('ipfs-api');
 const pify = require('pify');
+const crypto = require('crypto');
 
 const connectionOptions = {
   wallet : {
@@ -24,11 +25,13 @@ const ipfs = pify(ipfsAPI(process.env.IPFS_HOST, '5001', {protocol: 'http'}));
 const bc = require('composer-client').BusinessNetworkConnection;
 const clientConnection = new bc(connectionOptions);
 
-async function registerParticipant(username, password, clientConnection, businessNetworkDefinition) {
+async function registerParticipant(username, salt, hashedPassword, clientConnection, businessNetworkDefinition) {
   const newParticipant = businessNetworkDefinition
     .getFactory()
     .newResource('org.dfs', 'DataOwner', username);
-  newParticipant.password = password;
+  console.log(salt);
+  newParticipant.salt = salt;
+  newParticipant.hashedPassword = hashedPassword;
   await (await clientConnection.getParticipantRegistry('org.dfs.DataOwner')).add(newParticipant);
 }
 
@@ -60,6 +63,18 @@ async function submitPutData(updaterID, oldDataID, newDataID, businessNetworkDef
   await (await clientConnection.getAssetRegistry('org.dfs.PutData')).add(putDataTransaction);
 }
 
+function genRandomString(length){
+  return crypto.randomBytes(Math.ceil(length/2))
+    .toString('hex') /** convert to hexadecimal format */
+    .slice(0,length);   /** return required number of characters */
+};
+
+function sha512(password, salt){
+  const hash = crypto.createHmac('sha512', salt); /** Hashing algorithm sha512 */
+  hash.update(password);
+  return hash.digest('hex');
+};
+
 router.get('/', function(req, res, next) {
   res.send('respond with a resource');
 });
@@ -67,7 +82,8 @@ router.get('/', function(req, res, next) {
 router.post('/register', async function(req, res, next) {
   try {
     const businessNetworkDefinition = await clientConnection.connect("admin@dfs");
-    await registerParticipant(req.body.username,req.body.password, clientConnection, businessNetworkDefinition);
+    const salt = genRandomString(16);
+    await registerParticipant(req.body.username, salt, sha512(req.body.password, salt), clientConnection, businessNetworkDefinition);
     res.end();
   } catch (err) {
     console.log(err);
@@ -87,11 +103,13 @@ router.post('/login', async function(req, res, next) {
       throw `Cannot find user ${username}`;
     }
 
-    if (filteredParticipants[0].password !== password) {
+    const claimedUser = filteredParticipants[0];
+
+    if (sha512(password, claimedUser.salt) !== claimedUser.hashedPassword) {
       throw `Invalid password`;
     }
 
-    const token = jwt.sign({username: filteredParticipants[0].$identifier}, 'secret', {expiresIn: '5h'});
+    const token = jwt.sign({username: claimedUser.$identifier}, 'secret', {expiresIn: '5h'});
 
     res.json({token});
   } catch (err) {
