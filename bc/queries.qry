@@ -1,9 +1,8 @@
-// To do access control: add dataowner identifier condition here
 query getData {
   description: "Get Data asset by GUID"
   statement: 
     SELECT org.dfs.Data
-    WHERE (guid == _$guid)
+    WHERE (guid == _$guid AND owner == _$username)
 }
 
 query getUser {

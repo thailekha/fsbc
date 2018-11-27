@@ -126,10 +126,13 @@ router.get('/file/:id', async function(req, res, next) {
     const username = jwt.verify(token, 'secret').username;
     const requestedDataID = req.params.id;
     const businessNetworkDefinition = await clientConnection.connect("admin@dfs");
-    const requestedData = await clientConnection.query('getData', {guid: requestedDataID});
+    const requestedData = await clientConnection.query('getData', {
+      guid: requestedDataID,
+      username: `resource:org.dfs.User#${username}`
+    });
 
     if (requestedData.length !== 1) {
-      throw `Cannot find user ${username} or data ${requestedDataID}`;
+      throw `Cannot find data ${requestedDataID} or unauthorized user`;
     }
 
     const ipfs = pify(ipfsAPI(process.env.IPFS_HOST, '5001', {protocol: 'http'}));
@@ -194,10 +197,13 @@ router.get('/:id', async function(req, res, next) {
     const username = jwt.verify(token, 'secret').username;
     const requestedDataID = req.params.id;
     const businessNetworkDefinition = await clientConnection.connect("admin@dfs");
-    const requestedData = await clientConnection.query('getData', {guid: requestedDataID});
+    const requestedData = await clientConnection.query('getData', {
+      guid: requestedDataID,
+      username: `resource:org.dfs.User#${username}`
+    });
 
     if (requestedData.length !== 1) {
-      throw `Cannot find data ${requestedDataID}`;
+      throw `Cannot find data ${requestedDataID} or unauthorized user`;
     }
 
     const ipfs = pify(ipfsAPI(process.env.IPFS_HOST, '5001', {protocol: 'http'}));
@@ -270,10 +276,13 @@ router.put('/:id', async function(req, res, next) {
 
     const updater = filteredParticipants[0];
 
-    const requestedData = await clientConnection.query('getData', {guid: requestedDataID});
+    const requestedData = await clientConnection.query('getData', {
+      guid: requestedDataID,
+      username: `resource:org.dfs.User#${username}`
+    });
 
     if (requestedData.length !== 1) {
-      throw `Cannot find data ${requestedDataID}`;
+      throw `Cannot find data ${requestedDataID} or unauthorized user`;
     }
 
     const ipfsResponse = await ipfs.files.add(Buffer.from(JSON.stringify(req.body)));
@@ -306,10 +315,13 @@ router.get('/:id/trace', async function(req, res, next) {
     const username = jwt.verify(token, 'secret').username;
     const requestedDataID = req.params.id;
     const businessNetworkDefinition = await clientConnection.connect("admin@dfs");
-    const requestedData = await clientConnection.query('getData', {guid: requestedDataID});
+    const requestedData = await clientConnection.query('getData', {
+      guid: requestedDataID,
+      username: `resource:org.dfs.User#${username}`
+    });
 
     if (requestedData.length !== 1) {
-      throw `Cannot find user ${username} or data ${requestedDataID}`;
+      throw `Cannot find data ${requestedDataID} or unauthorized user`;
     }
 
     const allVersionIDs = [];
@@ -318,10 +330,13 @@ router.get('/:id/trace', async function(req, res, next) {
     while (point.lastVersion) {
       allVersionIDs.push(point.$identifier);
 
-      const oldData = await clientConnection.query('getData', {guid: point.lastVersion.$identifier});
+      const oldData = await clientConnection.query('getData', {
+        guid: point.lastVersion.$identifier,
+        username: `resource:org.dfs.User#${username}`
+      });
 
       if (oldData.length !== 1) {
-        throw `Could not trace data ${point.lastVersion.$identifier}`;
+        throw `Could not trace data ${point.lastVersion.$identifier} or unauthorized user`;
       }
 
       point = oldData[0];
