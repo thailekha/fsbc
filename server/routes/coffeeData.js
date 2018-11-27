@@ -28,40 +28,42 @@ const clientConnection = new bc(connectionOptions);
 async function registerParticipant(username, salt, hashedPassword, clientConnection, businessNetworkDefinition) {
   const newParticipant = businessNetworkDefinition
     .getFactory()
-    .newResource('org.dfs', 'DataOwner', username);
+    .newResource('org.dfs', 'User', username);
   console.log(salt);
   newParticipant.salt = salt;
   newParticipant.hashedPassword = hashedPassword;
-  await (await clientConnection.getParticipantRegistry('org.dfs.DataOwner')).add(newParticipant);
+  await (await clientConnection.getParticipantRegistry('org.dfs.User')).add(newParticipant);
 }
 
-async function submitGetData(requesterID, dataID, businessNetworkDefinition) {
+async function submitTransactionAsset(transactionName, businessNetworkDefinition, opts) {
   const factory = businessNetworkDefinition.getFactory();
-  const accessDataTransaction = factory.newResource('org.dfs', 'GetData', uniqid());
-  accessDataTransaction.timestamp = new Date();
-  accessDataTransaction.requester = factory.newRelationship('org.dfs', 'DataOwner', requesterID);
-  accessDataTransaction.data = factory.newRelationship('org.dfs', 'Data', dataID);
-  await (await clientConnection.getAssetRegistry('org.dfs.GetData')).add(accessDataTransaction);
+  const transaction = factory.newResource('org.dfs', transactionName, uniqid());
+  transaction.timestamp = new Date();
+  const options = opts(factory)
+  for (const key in options) {
+    transaction[key] = options[key];
+  }
+  await (await clientConnection.getAssetRegistry(`org.dfs.${transactionName}`)).add(transaction);
 }
 
-async function submitPostData(ownerID, dataID, businessNetworkDefinition) {
-  const factory = businessNetworkDefinition.getFactory();
-  const postDataTransaction = factory.newResource('org.dfs', 'PostData', uniqid());
-  postDataTransaction.timestamp = new Date();
-  postDataTransaction.owner = factory.newRelationship('org.dfs', 'DataOwner', ownerID);
-  postDataTransaction.data = factory.newRelationship('org.dfs', 'Data', dataID);
-  await (await clientConnection.getAssetRegistry('org.dfs.PostData')).add(postDataTransaction);
-}
+const submitGetData = async (accessor, data, businessNetworkDefinition) =>
+  await submitTransactionAsset('GetData', businessNetworkDefinition, factory => ({
+    accessor: factory.newRelationship('org.dfs', 'User', accessor), 
+    data: factory.newRelationship('org.dfs', 'Data', data)
+  }));
 
-async function submitPutData(updaterID, oldDataID, newDataID, businessNetworkDefinition) {
-  const factory = businessNetworkDefinition.getFactory();
-  const putDataTransaction = factory.newResource('org.dfs', 'PutData', uniqid());
-  putDataTransaction.timestamp = new Date();
-  putDataTransaction.updater = factory.newRelationship('org.dfs', 'DataOwner', updaterID);
-  putDataTransaction.oldData = factory.newRelationship('org.dfs', 'Data', oldDataID);
-  putDataTransaction.newData = factory.newRelationship('org.dfs', 'Data', newDataID);
-  await (await clientConnection.getAssetRegistry('org.dfs.PutData')).add(putDataTransaction);
-}
+const submitPostData = async (owner, data, businessNetworkDefinition) =>
+  await submitTransactionAsset('PostData', businessNetworkDefinition, factory => ({
+    owner: factory.newRelationship('org.dfs', 'User', owner), 
+    data: factory.newRelationship('org.dfs', 'Data', data)
+  }));
+
+const submitPutData = async (updater, oldData, newData, businessNetworkDefinition) =>
+  await submitTransactionAsset('PutData', businessNetworkDefinition, factory => ({
+    updater: factory.newRelationship('org.dfs', 'User', updater), 
+    oldData: factory.newRelationship('org.dfs', 'Data', oldData),
+    newData: factory.newRelationship('org.dfs', 'Data', newData)
+  }));
 
 function genRandomString(length){
   return crypto.randomBytes(Math.ceil(length/2))
@@ -97,7 +99,7 @@ router.post('/login', async function(req, res, next) {
     const password = req.body.password;
 
     await clientConnection.connect("admin@dfs");
-    const filteredParticipants = await clientConnection.query('getDataOwner', {username});;
+    const filteredParticipants = await clientConnection.query('getUser', {username});;
     
     if (filteredParticipants.length !== 1) {
       throw `Cannot find user ${username}`;
@@ -152,7 +154,7 @@ router.post('/file', async function(req, res, next) {
     const token = req.header("Authorization").split('Bearer ')[1];
     const username = jwt.verify(token, 'secret').username;
     const businessNetworkDefinition = await clientConnection.connect("admin@dfs");
-    const filteredParticipants = await clientConnection.query('getDataOwner', {username});
+    const filteredParticipants = await clientConnection.query('getUser', {username});
 
     if (filteredParticipants.length !== 1) {
       throw `Cannot find user ${username}`;
@@ -175,7 +177,7 @@ router.post('/file', async function(req, res, next) {
     const dataAsset = factory.newResource('org.dfs', 'Data', guid);
     dataAsset.originalName = originalName;
     dataAsset.mimetype = req.files.file.mimetype;
-    dataAsset.owner = factory.newRelationship('org.dfs','DataOwner',owner.$identifier);
+    dataAsset.owner = factory.newRelationship('org.dfs','User',owner.$identifier);
     await (await clientConnection.getAssetRegistry('org.dfs.Data')).add(dataAsset);
     await submitPostData(owner.$identifier,dataAsset.$identifier,businessNetworkDefinition);
 
@@ -215,7 +217,7 @@ router.post('/', async function(req, res, next) {
     const token = req.header("Authorization").split('Bearer ')[1];
     const username = jwt.verify(token, 'secret').username;
     const businessNetworkDefinition = await clientConnection.connect("admin@dfs");
-    const filteredParticipants = await clientConnection.query('getDataOwner', {username});
+    const filteredParticipants = await clientConnection.query('getUser', {username});
 
     if (filteredParticipants.length !== 1) {
       throw `Cannot find user ${username}`;
@@ -240,7 +242,7 @@ router.post('/', async function(req, res, next) {
     const dataAsset = factory.newResource('org.dfs', 'Data', guid);
     dataAsset.originalName = originalName;
     dataAsset.mimetype = 'application/json';
-    dataAsset.owner = factory.newRelationship('org.dfs','DataOwner',owner.$identifier);
+    dataAsset.owner = factory.newRelationship('org.dfs','User',owner.$identifier);
     await (await clientConnection.getAssetRegistry('org.dfs.Data')).add(dataAsset);
     await submitPostData(owner.$identifier,dataAsset.$identifier,businessNetworkDefinition);
 
@@ -260,7 +262,7 @@ router.put('/:id', async function(req, res, next) {
     const requestedDataID = req.params.id;
     const businessNetworkDefinition = await clientConnection.connect("admin@dfs");
 
-    const filteredParticipants = await clientConnection.query('getDataOwner', {username});
+    const filteredParticipants = await clientConnection.query('getUser', {username});
 
     if (filteredParticipants.length !== 1) {
       throw `Cannot find user ${username}`;
@@ -286,7 +288,7 @@ router.put('/:id', async function(req, res, next) {
     dataAsset.originalName = originalName;
     dataAsset.mimetype = 'application/json';
     console.log(requestedData[0].owner.$identifier);
-    dataAsset.owner = factory.newRelationship('org.dfs','DataOwner',requestedData[0].owner.$identifier);
+    dataAsset.owner = factory.newRelationship('org.dfs','User',requestedData[0].owner.$identifier);
     dataAsset.lastVersion = factory.newRelationship('org.dfs','Data',requestedData[0].$identifier);
 
     await (await clientConnection.getAssetRegistry('org.dfs.Data')).add(dataAsset);

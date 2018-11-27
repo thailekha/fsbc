@@ -6,9 +6,9 @@ query getData {
     WHERE (guid == _$guid)
 }
 
-query getDataOwner {
-  description: "Get DataOwner by username"
+query getUser {
+  description: "Get User by username"
   statement: 
-    SELECT org.dfs.DataOwner
+    SELECT org.dfs.User
     WHERE (username == _$username)
 }

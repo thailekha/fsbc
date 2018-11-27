@@ -7,12 +7,10 @@ asset Data identified by guid {
     o String guid
     o String originalName
     o String mimetype
-    --> DataOwner owner
+    --> User owner
     --> Data lastVersion optional
 }
-
-// TODO: change to user
-participant DataOwner identified by username {
+participant User identified by username {
     o String username
     o String hashedPassword
     o String salt
@@ -20,19 +18,19 @@ participant DataOwner identified by username {
 asset GetData identified by id {
     o String id
     o DateTime timestamp
-    --> DataOwner requester
+    --> User accessor
     --> Data data
 }
 asset PostData identified by id {
     o String id
     o DateTime timestamp
-    --> DataOwner owner
+    --> User owner
     --> Data data
 }
 asset PutData identified by id {
     o String id
     o DateTime timestamp
-    --> DataOwner updater
+    --> User updater
     --> Data oldData
     --> Data newData
 }
