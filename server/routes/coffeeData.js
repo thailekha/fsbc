@@ -218,6 +218,52 @@ router.get('/:id', async function(req, res, next) {
   }
 });
 
+router.get('/:id/latest', async function(req, res, next) {
+  try {
+    const token = req.header("Authorization").split('Bearer ')[1];
+    const username = jwt.verify(token, 'secret').username;
+    const requestedDataID = req.params.id;
+    const businessNetworkDefinition = await clientConnection.connect("admin@dfs");
+    var requestedData = await clientConnection.query('getData', {
+      guid: requestedDataID,
+      username: `resource:org.dfs.User#${username}`
+    });
+
+    if (requestedData.length !== 1) {
+      throw `Cannot find data ${requestedDataID} or unauthorized user`;
+    }
+
+    //in case of loop
+    const checked = new Set([]);
+    var latestGuid;
+
+    while (requestedData.length == 1 && !checked.has(requestedData[0].$identifier)) {
+      if (requestedData[0].owner.$identifier !== username) {
+        throw `User ${username} is not authorized to access ${requestedDataID}`
+      }
+      checked.add(requestedData[0].$identifier);
+      latestGuid = requestedData[0].$identifier;
+      requestedData = await clientConnection.query('getNewerVersionOfData', {
+        guid: `resource:org.dfs.Data#${latestGuid}`,
+        username: `resource:org.dfs.User#${username}`
+      });
+    }
+
+    const ipfs = pify(ipfsAPI(process.env.IPFS_HOST, '5001', {protocol: 'http'}));
+    const ipfsResponse = await ipfs.files.cat(latestGuid);
+    await submitGetData(username,latestGuid,businessNetworkDefinition);
+
+    res
+      .json({
+        latestGuid,
+        data: JSON.parse(ipfsResponse.toString())
+      });
+  } catch (err) {
+  	console.log(err);
+  	next(err);
+  }
+});
+
 router.post('/', async function(req, res, next) {
   try {
     const token = req.header("Authorization").split('Bearer ')[1];

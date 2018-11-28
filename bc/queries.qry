@@ -5,6 +5,13 @@ query getData {
     WHERE (guid == _$guid AND owner == _$username)
 }
 
+query getNewerVersionOfData {
+  description: "Get Data asset whose lastVersion points to the provided GUID"
+  statement: 
+    SELECT org.dfs.Data
+    WHERE (lastVersion == _$guid AND owner == _$username)
+}
+
 query getUser {
   description: "Get User by username"
   statement: 
