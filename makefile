@@ -30,13 +30,19 @@ init-business-network:
 	# clean up
 	rm dfs@*
 	rm *.card
+sleep-3:
+	sleep 3
+fresh-vm: start-composer sleep-3 init-business-network install-ipfs config-ipfs
+	ipfs daemon &
+	cd server && npm run dev
 update-business-network:
-	$(eval VERSION=$(shell cat ./bc/package.json | jq --raw-output '.version'))
+	$(eval VERSION=$(shell cd bc && npm version patch > /dev/null && cat package.json | jq --raw-output '.version'))
 	echo $(VERSION)
 	composer archive create --sourceType dir --sourceName ./bc -a dfs@$(VERSION).bna
 	composer network install --card PeerAdmin@hlfv1 --archiveFile dfs@$(VERSION).bna
 	composer network upgrade -c PeerAdmin@hlfv1 -n dfs -V $(VERSION)
 	composer network ping -c admin@dfs
+	rm dfs@*
 install-yarn:
 	curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
 	echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
@@ -49,14 +55,14 @@ test-register:
 		--url http://$(server):9000/data/register \
 		--header 'Content-Type: application/json' \
 		--header 'cache-control: no-cache' \
-		--data '{"username": "tom","password": "123"}'
+		--data '{"username": "tom","password": "123","role":"EXPORTER"}'
 login:
 	$(eval TOKEN=$(shell \
 		curl --silent --request POST \
 			--url http://$(server):9000/data/login \
 			--header 'Content-Type: application/json' \
 			--header 'cache-control: no-cache' \
-			--data '{"username": "tom","password": "123"}' | jq  --raw-output '.token'))
+			--data '{"username": "tom","password": "123","role":"EXPORTER"}' | jq  --raw-output '.token'))
 post:
 	$(eval GUID=$(shell \
 		curl --silent --request POST \
@@ -88,12 +94,5 @@ trace:
 test-login: login
 	echo Login token: $(TOKEN)
 # can write multiline dependencies using backslash
-test-get: login get
-	echo $(RESPONSE)
-test-post: login post
-	echo GUID: $(GUID)
-test-put: login post put
-	echo OLD: $(GUID)
-	echo New: $(NEW_GUID)
 test-trace: login post put trace
 	echo TRACE: $(TRACE)
