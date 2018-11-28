@@ -8,12 +8,14 @@ asset Data identified by guid {
     o String originalName
     o String mimetype
     --> User owner
+    --> User[] authorizedUsers
     --> Data lastVersion optional
 }
 participant User identified by username {
     o String username
     o String hashedPassword
     o String salt
+    o String role //cannot use enumerated type due to being general purpose
 }
 asset GetData identified by id {
     o String id

@@ -25,11 +25,11 @@ const ipfs = pify(ipfsAPI(process.env.IPFS_HOST, '5001', {protocol: 'http'}));
 const bc = require('composer-client').BusinessNetworkConnection;
 const clientConnection = new bc(connectionOptions);
 
-async function registerParticipant(username, salt, hashedPassword, clientConnection, businessNetworkDefinition) {
+async function registerParticipant(username, role, salt, hashedPassword, clientConnection, businessNetworkDefinition) {
   const newParticipant = businessNetworkDefinition
     .getFactory()
     .newResource('org.dfs', 'User', username);
-  console.log(salt);
+  newParticipant.role = role;
   newParticipant.salt = salt;
   newParticipant.hashedPassword = hashedPassword;
   await (await clientConnection.getParticipantRegistry('org.dfs.User')).add(newParticipant);
@@ -85,7 +85,14 @@ router.post('/register', async function(req, res, next) {
   try {
     const businessNetworkDefinition = await clientConnection.connect("admin@dfs");
     const salt = genRandomString(16);
-    await registerParticipant(req.body.username, salt, sha512(req.body.password, salt), clientConnection, businessNetworkDefinition);
+    await registerParticipant(
+      req.body.username,
+      req.body.role,
+      salt,
+      sha512(req.body.password, salt),
+      clientConnection,
+      businessNetworkDefinition
+    );
     res.end();
   } catch (err) {
     console.log(err);
@@ -120,76 +127,76 @@ router.post('/login', async function(req, res, next) {
   }
 });
 
-router.get('/file/:id', async function(req, res, next) {
-  try {
-    const token = req.header("Authorization").split('Bearer ')[1];
-    const username = jwt.verify(token, 'secret').username;
-    const requestedDataID = req.params.id;
-    const businessNetworkDefinition = await clientConnection.connect("admin@dfs");
-    const requestedData = await clientConnection.query('getData', {
-      guid: requestedDataID,
-      username: `resource:org.dfs.User#${username}`
-    });
+// router.get('/file/:id', async function(req, res, next) {
+//   try {
+//     const token = req.header("Authorization").split('Bearer ')[1];
+//     const username = jwt.verify(token, 'secret').username;
+//     const requestedDataID = req.params.id;
+//     const businessNetworkDefinition = await clientConnection.connect("admin@dfs");
+//     const requestedData = await clientConnection.query('getData', {
+//       guid: requestedDataID,
+//       username: `resource:org.dfs.User#${username}`
+//     });
 
-    if (requestedData.length !== 1) {
-      throw `Cannot find data ${requestedDataID} or unauthorized user`;
-    }
+//     if (requestedData.length !== 1) {
+//       throw `Cannot find data ${requestedDataID} or unauthorized user`;
+//     }
 
-    const ipfs = pify(ipfsAPI(process.env.IPFS_HOST, '5001', {protocol: 'http'}));
-    const ipfsResponse = await ipfs.files.cat(requestedData[0].guid);
-    await submitGetData(username,requestedData[0].$identifier,businessNetworkDefinition);
+//     const ipfs = pify(ipfsAPI(process.env.IPFS_HOST, '5001', {protocol: 'http'}));
+//     const ipfsResponse = await ipfs.files.cat(requestedData[0].guid);
+//     await submitGetData(username,requestedData[0].$identifier,businessNetworkDefinition);
 
-    res
-      .set('Content-Disposition', `attachment; filename="${requestedData[0].originalName}"`)
-      .set('Content-Type', requestedData[0].mimetype)
-      .end(ipfsResponse);
-  } catch (err) {
-  	console.log(err);
-  	next(err);
-  }
-});
+//     res
+//       .set('Content-Disposition', `attachment; filename="${requestedData[0].originalName}"`)
+//       .set('Content-Type', requestedData[0].mimetype)
+//       .end(ipfsResponse);
+//   } catch (err) {
+//   	console.log(err);
+//   	next(err);
+//   }
+// });
 
 // [ { path: 'QmcrHFQ5SnDEEZZuWXQbYvsam1k1bRJwajrQgMTAwKT7oA',
 // hash: 'QmcrHFQ5SnDEEZZuWXQbYvsam1k1bRJwajrQgMTAwKT7oA',
 // size: 121 } ]
-router.post('/file', async function(req, res, next) {
-  try {
-    const token = req.header("Authorization").split('Bearer ')[1];
-    const username = jwt.verify(token, 'secret').username;
-    const businessNetworkDefinition = await clientConnection.connect("admin@dfs");
-    const filteredParticipants = await clientConnection.query('getUser', {username});
+// router.post('/file', async function(req, res, next) {
+//   try {
+//     const token = req.header("Authorization").split('Bearer ')[1];
+//     const username = jwt.verify(token, 'secret').username;
+//     const businessNetworkDefinition = await clientConnection.connect("admin@dfs");
+//     const filteredParticipants = await clientConnection.query('getUser', {username});
 
-    if (filteredParticipants.length !== 1) {
-      throw `Cannot find user ${username}`;
-    }
+//     if (filteredParticipants.length !== 1) {
+//       throw `Cannot find user ${username}`;
+//     }
 
-    const owner = filteredParticipants[0];
+//     const owner = filteredParticipants[0];
 
-    //TODO encrypt the file
+//     //TODO encrypt the file
 
-    const ipfs = pify(ipfsAPI(process.env.IPFS_HOST, '5001', {protocol: 'http'}));
-    const ipfsResponse = await ipfs.files.add(req.files.file.data);
+//     const ipfs = pify(ipfsAPI(process.env.IPFS_HOST, '5001', {protocol: 'http'}));
+//     const ipfsResponse = await ipfs.files.add(req.files.file.data);
 
-    if (ipfsResponse.length !== 1) {
-      throw "Unexpected IPFS response"
-    }
+//     if (ipfsResponse.length !== 1) {
+//       throw "Unexpected IPFS response"
+//     }
 
-    const guid = ipfsResponse[0].path;
-    const originalName = req.files.file.name;
-    const factory = businessNetworkDefinition.getFactory();
-    const dataAsset = factory.newResource('org.dfs', 'Data', guid);
-    dataAsset.originalName = originalName;
-    dataAsset.mimetype = req.files.file.mimetype;
-    dataAsset.owner = factory.newRelationship('org.dfs','User',owner.$identifier);
-    await (await clientConnection.getAssetRegistry('org.dfs.Data')).add(dataAsset);
-    await submitPostData(owner.$identifier,dataAsset.$identifier,businessNetworkDefinition);
+//     const guid = ipfsResponse[0].path;
+//     const originalName = req.files.file.name;
+//     const factory = businessNetworkDefinition.getFactory();
+//     const dataAsset = factory.newResource('org.dfs', 'Data', guid);
+//     dataAsset.originalName = originalName;
+//     dataAsset.mimetype = req.files.file.mimetype;
+//     dataAsset.owner = factory.newRelationship('org.dfs','User',owner.$identifier);
+//     await (await clientConnection.getAssetRegistry('org.dfs.Data')).add(dataAsset);
+//     await submitPostData(owner.$identifier,dataAsset.$identifier,businessNetworkDefinition);
 
-    res.json({globalUniqueID: guid});
-  } catch (err) {
-    console.log(err);
-    next(err);
-  }
-});
+//     res.json({globalUniqueID: guid});
+//   } catch (err) {
+//     console.log(err);
+//     next(err);
+//   }
+// });
 
 router.get('/:id', async function(req, res, next) {
   try {
@@ -295,6 +302,7 @@ router.post('/', async function(req, res, next) {
     dataAsset.originalName = originalName;
     dataAsset.mimetype = 'application/json';
     dataAsset.owner = factory.newRelationship('org.dfs','User',owner.$identifier);
+    dataAsset.authorizedUsers = [];
     await (await clientConnection.getAssetRegistry('org.dfs.Data')).add(dataAsset);
     await submitPostData(owner.$identifier,dataAsset.$identifier,businessNetworkDefinition);
 
@@ -398,6 +406,42 @@ router.get('/:id/trace', async function(req, res, next) {
     }
 
     res.json(allVersions);
+  } catch (err) {
+  	console.log(err);
+  	next(err);
+  }
+});
+
+// TODO: endpoint for getting users based on role
+
+router.put('/:id/grant', async function(req, res, next) {
+  try {
+    const token = req.header("Authorization").split('Bearer ')[1];
+    const username = jwt.verify(token, 'secret').username;
+    const grantedUsers = req.body.grantedUsers;
+    const requestedDataID = req.params.id;
+    const businessNetworkDefinition = await clientConnection.connect("admin@dfs");
+    const requestedData = await clientConnection.query('getData', {
+      guid: requestedDataID,
+      username: `resource:org.dfs.User#${username}`
+    });
+
+    if (requestedData.length !== 1) {
+      throw `Cannot find data ${requestedDataID} or unauthorized user`;
+    }
+
+    const dataAsset = requestedData[0];
+    const updatedAuthorizedUsers = Array.from(new Set(grantedUsers)) //no duplicate
+      //authorize only usernames that have not been authorized
+      .filter(username => username !== dataAsset.owner.$identifier && !dataAsset.authorizedUsers.find(relationship => relationship.$identifier === username))
+      .map(username => businessNetworkDefinition.getFactory().newRelationship('org.dfs', 'User', username));
+
+    if (updatedAuthorizedUsers.length > 0) {
+      dataAsset.authorizedUsers = dataAsset.authorizedUsers.concat(updatedAuthorizedUsers);
+      await (await clientConnection.getAssetRegistry('org.dfs.Data')).update(dataAsset);
+    }
+
+    res.end();
   } catch (err) {
   	console.log(err);
   	next(err);
