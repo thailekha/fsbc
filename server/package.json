@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "start": "IPFS_HOST=\"52.1.224.106\" PORT=9000 forever start -l forever.log -o out.log -e err.log ./bin/www",
-    "dev": "IPFS_HOST=\"localhost\" PORT=9000 nodemon --ignore './config' -L ./bin/www"
+    "dev": "IPFS_HOST=\"localhost\" PORT=9000 nodemon --ignore './config' -L ./bin/www",
+    "test": "./node_modules/.bin/eslint --fix routes/**/*.js bin/www"
   },
   "dependencies": {
     "composer-client": "^0.20.2",
@@ -21,6 +22,8 @@
     "uniqid": "^5.0.3"
   },
   "devDependencies": {
+    "eslint": "^5.9.0",
+    "eslint-plugin-import": "^2.14.0",
     "nodemon": "^1.18.4"
   }
 }

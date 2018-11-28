@@ -5,7 +5,6 @@ var logger = require('morgan');
 var cors = require('cors');
 const fileUpload = require('express-fileupload');
 
-var indexRouter = require('./routes/index');
 var coffeeDataRouter = require('./routes/coffeeData');
 
 var app = express();
