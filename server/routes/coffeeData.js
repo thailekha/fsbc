@@ -243,27 +243,27 @@ router.get('/:id/latest', async(req, res, next) => {
 
     // in case of loop
     const checked = new Set([]);
-    let latestGuid;
+    let latestGlobalUniqueID;
 
     while (requestedData.length === 1 && !checked.has(requestedData[0].$identifier)) {
       if (requestedData[0].owner.$identifier !== username) {
         throw `User ${username} is not authorized to access ${requestedDataID}`;
       }
       checked.add(requestedData[0].$identifier);
-      latestGuid = requestedData[0].$identifier;
+      latestGlobalUniqueID = requestedData[0].$identifier;
       requestedData = await clientConnection.query('getNewerVersionOfData', {
-        guid: `resource:org.dfs.Data#${latestGuid}`,
+        guid: `resource:org.dfs.Data#${latestGlobalUniqueID}`,
         username: `resource:org.dfs.User#${username}`,
       });
     }
 
     const ipfs = pify(ipfsAPI(process.env.IPFS_HOST, '5001', { protocol: 'http' }));
-    const ipfsResponse = await ipfs.files.cat(latestGuid);
-    await submitGetData(username, latestGuid, businessNetworkDefinition);
+    const ipfsResponse = await ipfs.files.cat(latestGlobalUniqueID);
+    await submitGetData(username, latestGlobalUniqueID, businessNetworkDefinition);
 
     res
       .json({
-        latestGuid,
+        latestGlobalUniqueID,
         data: JSON.parse(ipfsResponse.toString()),
       });
   } catch (err) {
@@ -351,7 +351,7 @@ router.put('/:id', async(req, res, next) => {
     const dataAsset = factory.newResource('org.dfs', 'Data', guid);
     dataAsset.originalName = originalName;
     dataAsset.mimetype = 'application/json';
-    console.log(requestedData[0].owner.$identifier);
+    dataAsset.authorizedUsers = requestedData[0].authorizedUsers;
     dataAsset.owner = factory.newRelationship('org.dfs', 'User', requestedData[0].owner.$identifier);
     dataAsset.lastVersion = factory.newRelationship('org.dfs', 'Data', requestedData[0].$identifier);
 

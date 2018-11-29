@@ -2,7 +2,7 @@ query getData {
   description: "Get Data asset by GUID"
   statement: 
     SELECT org.dfs.Data
-    WHERE (guid == _$guid AND owner == _$username)
+    WHERE ( (guid == _$guid) AND ( (owner == _$username) OR (authorizedUsers CONTAINS _$username) ) )
 }
 
 query getNewerVersionOfData {
