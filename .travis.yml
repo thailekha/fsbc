@@ -1,0 +1,18 @@
+language: node_js
+node_js: '8'
+dist: xenial
+services: docker
+cache: yarn
+env:
+  global:
+    secure: ZANV3EuA0FKTmD3fJ1LNrmtgyWkii9rSSGzWNgWOE5QKM/mh2E4mcd/b5mD88Wy3dKRgOYk1Jsm2JoR5gpBLVeFdJQN4o7OL2FczWN7RDRjD/69VizBkPDcw2Z06GyA/ffxHiL/hUdPcBnK3ngx//CyPFGPpk0Uod3Ij10xjWyVw0l3IKDiXMsrc3mYIyp9fj7r1n/oi6Vkqy3EOMhhFDVmDy9g0W9I7d/WDyny2B2EaM0yfnwKRkg5h396Hh4jvuCO2M37v2gP2lQ9q6P003npFMz6qw8dosMv8hVv96XopqGQrot0ymTKOHp1V4hVSD3ony4kJA43CBMJteQcchmVY+eIAPnhj4ua20KzcxPWO2K1XuUUiYh/mrYKnz+stKFPGWQIDippiWmxoLqeoyMehtpMLbbaGEiafR3zsbpZbVNvtHJQymCFqW6JF24ZbNFRzYDasNYSPr4oTjs/plhvNlRT4Ojcz9fdqySVj6KbaM0w3nzthm4RoRTvl24wYnYh+17pxCSavzBJH+gj9w3fuRII68jM1/X7HLit+6tQNKGk6lWtLkbUJEY4PUAh/EHnLGvKN45QYDfsmcumHat39RNPQgKSF5msdFLxBy0CTV+TnOCU9BaLTlnYCkEux0H926sdAxkvOzUi89ZxeX/O8SyuyUSlsr7cm7oug+4o=
+before_install:
+  # Load cached docker images
+  - ./.travis/prereqs-ubuntu.sh
+  - ./.travis/install-fabric.sh
+  # remove php composer
+  - sudo rm $(which composer)
+  - npm install -g composer-cli@0.20
+script:
+  - make travis-build
+  - make sonarcloud

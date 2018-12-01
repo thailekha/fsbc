@@ -6,7 +6,8 @@
     "start": "IPFS_HOST=\"52.1.224.106\" PORT=9000 forever start -l forever.log -o out.log -e err.log ./bin/www",
     "dev": "IPFS_HOST=\"localhost\" PORT=9000 nodemon --ignore './config' -L ./bin/www",
     "lint": "./node_modules/.bin/eslint --fix routes/**/*.js tests/**/*.js bin/www",
-    "test": "IPFS_HOST=\"localhost\" PORT=9000 node ./node_modules/mocha/bin/mocha ./tests/data.test.js --timeout 60000 --exit"
+    "test": "IPFS_HOST=\"localhost\" PORT=9000 node ./node_modules/mocha/bin/mocha ./tests/data.test.js --timeout 60000 --exit",
+    "coverage": "IPFS_HOST=\"localhost\" PORT=9000 ./node_modules/.bin/nyc --reporter=text --reporter=lcov ./node_modules/mocha/bin/mocha ./tests/data.test.js --timeout 60000 --exit"
   },
   "dependencies": {
     "composer-client": "^0.20.2",
@@ -28,6 +29,8 @@
     "eslint-plugin-import": "^2.14.0",
     "mocha": "^5.2.0",
     "nodemon": "^1.18.4",
+    "nyc": "^13.1.0",
+    "source-map-support": "^0.5.9",
     "supertest": "^3.3.0"
   }
 }
