@@ -60,7 +60,6 @@ sudo apt-get -y install build-essential libssl-dev
 curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash -
 sudo apt-get install -y nodejs
 
-
 # Ensure that CA certificates are installed
 sudo apt-get -y install apt-transport-https ca-certificates
 
