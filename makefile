@@ -64,7 +64,7 @@ fresh-vm: start-composer sleep-3 init-business-network install-ipfs config-ipfs
 # ===================
 travis-build: start-composer sleep-3 init-business-network install-ipfs config-ipfs
 	ipfs daemon &
-	cd server && yarn install && npm run coverage
+	cd server && yarn install && npm run lint && npm run coverage
 sonarcloud: install-sonar-scanner
 	cd server && ../sonar-scanner-3.2.0.1227-linux/bin/sonar-scanner -Dsonar.login=$(SONARTOKEN)
 # ===================

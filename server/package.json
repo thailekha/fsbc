@@ -1,6 +1,6 @@
 {
   "name": "generated-server",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "private": true,
   "scripts": {
     "start": "IPFS_HOST=\"52.1.224.106\" PORT=9000 forever start -l forever.log -o out.log -e err.log ./bin/www",
