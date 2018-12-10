@@ -37,7 +37,7 @@ describe('User management', function() {
   });
 });
 
-describe('Data management', async() => {
+describe('allTasks', async() => {
   it('should register, login, post, get, put, get, trace, get-latest, grant', async() => {
     const user1 = generateUser();
     const user2 = generateUser();
@@ -142,5 +142,58 @@ describe('Data management', async() => {
       .set('Authorization', `Bearer ${resLogin2.body.token}`)
       .expect(200);
     assert.deepEqual(data2, resGetAuthorized.body);
+  });
+});
+
+describe('getLatest', async() => {
+  it('should register, login, post 2 data assets, and getAll data', async() => {
+    const user1 = generateUser();
+
+    const data1 = {
+      coffee: `mocha-${uniqid()}`
+    };
+    const data2 = {
+      fruit: `dragonfruit-${uniqid()}`
+    };
+
+    await request(app)
+      .post('/data/register')
+      .set('Content-Type', 'application/json')
+      .send(user1)
+      .expect(200);
+
+    const resLogin1 = await request(app)
+      .post('/data/login')
+      .set('Content-Type', 'application/json')
+      .send(user1)
+      .expect(200);
+
+    const resPost1 = await request(app)
+      .post('/data')
+      .set('Content-Type', 'application/json')
+      .set('Authorization', `Bearer ${resLogin1.body.token}`)
+      .send(data1)
+      .expect(200);
+    assert.ok(resPost1.body.globalUniqueID);
+    expect(resPost1.body.globalUniqueID).to.have.lengthOf.above(0);
+
+    const resPost2 = await request(app)
+      .post('/data')
+      .set('Content-Type', 'application/json')
+      .set('Authorization', `Bearer ${resLogin1.body.token}`)
+      .send(data2)
+      .expect(200);
+    assert.ok(resPost2.body.globalUniqueID);
+    expect(resPost2.body.globalUniqueID).to.have.lengthOf.above(0);
+
+    const resGetAll = await request(app)
+      .get(`/data/`)
+      .set('Content-Type', 'application/json')
+      .set('Authorization', `Bearer ${resLogin1.body.token}`)
+      .expect(200);
+    console.log(resGetAll.body);
+    assert.equal(resGetAll.body.length, 2);
+    assert.deepEqual(resGetAll.body[0], data2);
+    assert.deepEqual(resGetAll.body[1], data1);
   });
 });

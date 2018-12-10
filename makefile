@@ -77,12 +77,14 @@ test-register:
 		--header 'cache-control: no-cache' \
 		--data '{"username": "tom","password": "123","role":"EXPORTER"}'
 login:
+	echo login
 	$(eval TOKEN=$(shell \
 		curl --silent --request POST \
 			--url http://$(server):9000/data/login \
 			--header 'Content-Type: application/json' \
 			--header 'cache-control: no-cache' \
-			--data '{"username": "tom","password": "123","role":"EXPORTER"}' | jq  --raw-output '.token'))
+			--data '{"username": "test-amp2ovh3qjpd5b18j","password": "123","role":"EXPORTER"}' | jq  --raw-output '.token'))
+	echo $(TOKEN)
 post:
 	$(eval GUID=$(shell \
 		curl --silent --request POST \
@@ -97,6 +99,14 @@ get:
 			--url http://$(server):9000/data/$(GUID) \
 			--header 'Authorization: Bearer $(TOKEN)' \
 			--header 'cache-control: no-cache'))
+getAll:
+	echo getALL
+	$(eval RESPONSE=$(shell \
+		curl --silent --request GET \
+			--url http://$(server):9000/data \
+			--header 'Authorization: Bearer $(TOKEN)' \
+			--header 'cache-control: no-cache'))
+	echo $(RESPONSE)
 put:
 	$(eval NEW_GUID=$(shell \
 		curl --silent --request PUT \

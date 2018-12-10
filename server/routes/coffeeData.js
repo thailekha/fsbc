@@ -78,9 +78,9 @@ function sha512(password, salt) {
   return hash.digest('hex');
 }
 
-router.get('/', (req, res, next) => {
-  res.send('respond with a resource');
-});
+// router.get('/', (req, res, next) => {
+//   res.send('respond with a resource');
+// });
 
 router.post('/register', async(req, res, next) => {
   try {
@@ -226,13 +226,73 @@ router.get('/:id', async(req, res, next) => {
   }
 });
 
+router.get('/', async(req, res, next) => {
+  try {
+    const token = req.header('Authorization').split('Bearer ')[1];
+    const username = jwt.verify(token, 'secret').username;
+    const businessNetworkDefinition = await clientConnection.connect('admin@dfs');
+    const allData = await clientConnection.query('getAllData', {
+      username: `resource:org.dfs.User#${username}`,
+    });
+
+    // if (allData.length === 0) {
+    //   throw `Cannot find data ${requestedDataID} or unauthorized user`;
+    // }
+    const allLatestDataAssets = [];
+
+    for (const data of allData) {
+      const latestDataAsset = await getLatest([data], username, clientConnection);
+      if (latestDataAsset && allLatestDataAssets.indexOf(latestDataAsset) < 0) {
+        allLatestDataAssets.push(latestDataAsset);
+      }
+    }
+
+    allLatestDataAssets.sort((x,y) => x.lastChangedAt > y.lastChangedAt);
+
+    const allLatestData = [];
+    const ipfs = pify(ipfsAPI(process.env.IPFS_HOST, '5001', { protocol: 'http' }));
+    var counter = allLatestDataAssets.length - 1;
+    while (counter >= 0) {
+      const ipfsResponse = await ipfs.files.cat(allLatestDataAssets[counter].$identifier);
+      allLatestData.push(JSON.parse(ipfsResponse.toString()));
+      counter--;
+    }
+
+    res
+      .json(allLatestData);
+  } catch (err) {
+    console.log(err);
+    next(err);
+  }
+});
+
+async function getLatest(requestedData, username, clientConnection) {
+  // in case of loop
+  const checked = new Set([]);
+  let latestDataAsset;
+
+  while (requestedData.length === 1 && !checked.has(requestedData[0].$identifier)) {
+    if (requestedData[0].owner.$identifier !== username) {
+      throw `User ${username} is not authorized to access ${requestedData[0].$identifier}`;
+    }
+    checked.add(requestedData[0].$identifier);
+    latestDataAsset = requestedData[0];
+    requestedData = await clientConnection.query('getNewerVersionOfData', {
+      guid: `resource:org.dfs.Data#${latestDataAsset.$identifier}`,
+      username: `resource:org.dfs.User#${username}`,
+    });
+  }
+
+  return latestDataAsset;
+}
+
 router.get('/:id/latest', async(req, res, next) => {
   try {
     const token = req.header('Authorization').split('Bearer ')[1];
     const username = jwt.verify(token, 'secret').username;
     const requestedDataID = req.params.id;
     const businessNetworkDefinition = await clientConnection.connect('admin@dfs');
-    let requestedData = await clientConnection.query('getData', {
+    const requestedData = await clientConnection.query('getData', {
       guid: requestedDataID,
       username: `resource:org.dfs.User#${username}`,
     });
@@ -241,20 +301,11 @@ router.get('/:id/latest', async(req, res, next) => {
       throw `Cannot find data ${requestedDataID} or unauthorized user`;
     }
 
-    // in case of loop
-    const checked = new Set([]);
-    let latestGlobalUniqueID;
+    var latestGlobalUniqueID = (await getLatest(requestedData, username, clientConnection)).$identifier;
 
-    while (requestedData.length === 1 && !checked.has(requestedData[0].$identifier)) {
-      if (requestedData[0].owner.$identifier !== username) {
-        throw `User ${username} is not authorized to access ${requestedDataID}`;
-      }
-      checked.add(requestedData[0].$identifier);
+    if (!latestGlobalUniqueID) {
+      //already latest
       latestGlobalUniqueID = requestedData[0].$identifier;
-      requestedData = await clientConnection.query('getNewerVersionOfData', {
-        guid: `resource:org.dfs.Data#${latestGlobalUniqueID}`,
-        username: `resource:org.dfs.User#${username}`,
-      });
     }
 
     const ipfs = pify(ipfsAPI(process.env.IPFS_HOST, '5001', { protocol: 'http' }));
@@ -304,6 +355,7 @@ router.post('/', async(req, res, next) => {
     dataAsset.mimetype = 'application/json';
     dataAsset.owner = factory.newRelationship('org.dfs', 'User', owner.$identifier);
     dataAsset.authorizedUsers = [];
+    dataAsset.lastChangedAt = new Date();
     await (await clientConnection.getAssetRegistry('org.dfs.Data')).add(dataAsset);
     await submitPostData(owner.$identifier, dataAsset.$identifier, businessNetworkDefinition);
 
@@ -354,6 +406,7 @@ router.put('/:id', async(req, res, next) => {
     dataAsset.authorizedUsers = requestedData[0].authorizedUsers;
     dataAsset.owner = factory.newRelationship('org.dfs', 'User', requestedData[0].owner.$identifier);
     dataAsset.lastVersion = factory.newRelationship('org.dfs', 'Data', requestedData[0].$identifier);
+    dataAsset.lastChangedAt = new Date();
 
     await (await clientConnection.getAssetRegistry('org.dfs.Data')).add(dataAsset);
     await submitPutData(updater.$identifier, requestedData[0].$identifier, dataAsset.$identifier, businessNetworkDefinition);
