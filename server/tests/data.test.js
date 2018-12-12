@@ -193,7 +193,7 @@ describe('getLatest', async() => {
       .expect(200);
     console.log(resGetAll.body);
     assert.equal(resGetAll.body.length, 2);
-    assert.deepEqual(resGetAll.body[0], data2);
-    assert.deepEqual(resGetAll.body[1], data1);
+    assert.deepEqual(resGetAll.body[0].data, data2);
+    assert.deepEqual(resGetAll.body[1].data, data1);
   });
 });

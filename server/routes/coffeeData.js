@@ -230,7 +230,7 @@ router.get('/', async(req, res, next) => {
   try {
     const token = req.header('Authorization').split('Bearer ')[1];
     const username = jwt.verify(token, 'secret').username;
-    const businessNetworkDefinition = await clientConnection.connect('admin@dfs');
+    // const businessNetworkDefinition = await clientConnection.connect('admin@dfs');
     const allData = await clientConnection.query('getAllData', {
       username: `resource:org.dfs.User#${username}`,
     });
@@ -254,7 +254,10 @@ router.get('/', async(req, res, next) => {
     var counter = allLatestDataAssets.length - 1;
     while (counter >= 0) {
       const ipfsResponse = await ipfs.files.cat(allLatestDataAssets[counter].$identifier);
-      allLatestData.push(JSON.parse(ipfsResponse.toString()));
+      allLatestData.push({
+        guid: allLatestDataAssets[counter].$identifier,
+        data: JSON.parse(ipfsResponse.toString())
+      });
       counter--;
     }
 
