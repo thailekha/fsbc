@@ -18,6 +18,10 @@ install-yarn:
 	curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
 	echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
 	sudo apt-get update && sudo apt-get install --no-install-recommends yarn
+install-ngrok:
+	wget -q https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip
+	unzip -q ngrok-stable-linux-amd64.zip
+	rm ngrok-stable-linux-amd64.zip
 # ===================
 # Utils
 # ===================
@@ -59,6 +63,8 @@ update-business-network:
 fresh-vm: start-composer sleep-3 init-business-network install-ipfs config-ipfs
 	ipfs daemon &
 	cd server && npm run dev
+run-ngrok:
+	./ngrok http 9000
 # ===================
 # CI
 # ===================

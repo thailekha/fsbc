@@ -10,6 +10,9 @@ Vagrant.configure("2") do |config|
     config.vm.provider "virtualbox" do |v|
       v.customize ["modifyvm", :id, "--cpuexecutioncap", "100"]
       v.customize ["modifyvm", :id, "--memory", "4096"]
+
+      # fix VBoxManage error create logfile on the path from the machine that created this base box
+      v.customize [ "modifyvm", :id, "--uartmode1", "disconnected"]
     end
   end
 
