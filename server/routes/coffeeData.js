@@ -230,7 +230,7 @@ router.get('/', async(req, res, next) => {
   try {
     const token = req.header('Authorization').split('Bearer ')[1];
     const username = jwt.verify(token, 'secret').username;
-    // const businessNetworkDefinition = await clientConnection.connect('admin@dfs');
+    const businessNetworkDefinition = await clientConnection.connect('admin@dfs');
     const allData = await clientConnection.query('getAllData', {
       username: `resource:org.dfs.User#${username}`,
     });
@@ -238,26 +238,32 @@ router.get('/', async(req, res, next) => {
     // if (allData.length === 0) {
     //   throw `Cannot find data ${requestedDataID} or unauthorized user`;
     // }
-    const allLatestDataAssets = [];
+    var allLatestDataAssets = new Set();
 
     for (const data of allData) {
       const latestDataAsset = await getLatest([data], username, clientConnection);
-      if (latestDataAsset && allLatestDataAssets.indexOf(latestDataAsset) < 0) {
-        allLatestDataAssets.push(latestDataAsset);
+      if (latestDataAsset) {
+        allLatestDataAssets.add(latestDataAsset);
       }
     }
 
+    allLatestDataAssets = Array.from(allLatestDataAssets);
     allLatestDataAssets.sort((x,y) => x.lastChangedAt > y.lastChangedAt);
 
     const allLatestData = [];
     const ipfs = pify(ipfsAPI(process.env.IPFS_HOST, '5001', { protocol: 'http' }));
     var counter = allLatestDataAssets.length - 1;
+
     while (counter >= 0) {
       const ipfsResponse = await ipfs.files.cat(allLatestDataAssets[counter].$identifier);
-      allLatestData.push({
+
+      const dataToAdd = {
         guid: allLatestDataAssets[counter].$identifier,
         data: JSON.parse(ipfsResponse.toString())
-      });
+      };
+
+      if (allLatestData.findIndex(i => i.guid === dataToAdd.guid) < 0)
+        allLatestData.push(dataToAdd);
       counter--;
     }
 
@@ -275,9 +281,9 @@ async function getLatest(requestedData, username, clientConnection) {
   let latestDataAsset;
 
   while (requestedData.length === 1 && !checked.has(requestedData[0].$identifier)) {
-    if (requestedData[0].owner.$identifier !== username) {
-      throw `User ${username} is not authorized to access ${requestedData[0].$identifier}`;
-    }
+    // if (requestedData[0].owner.$identifier !== username) {
+    //   throw `User ${username} is not authorized to access ${requestedData[0].$identifier}`;
+    // }
     checked.add(requestedData[0].$identifier);
     latestDataAsset = requestedData[0];
     requestedData = await clientConnection.query('getNewerVersionOfData', {
@@ -483,6 +489,8 @@ router.put('/:id/grant', async(req, res, next) => {
       guid: requestedDataID,
       username: `resource:org.dfs.User#${username}`,
     });
+
+    console.log(`${grantedUsers} ${requestedData.length}`);
 
     if (requestedData.length !== 1) {
       throw `Cannot find data ${requestedDataID} or unauthorized user`;
