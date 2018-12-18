@@ -7,6 +7,7 @@ asset Data identified by guid {
     o String guid
     o String originalName
     o String mimetype
+    o DateTime lastChangedAt
     --> User owner
     --> User[] authorizedUsers
     --> Data lastVersion optional

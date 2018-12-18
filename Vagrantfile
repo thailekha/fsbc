@@ -10,6 +10,9 @@ Vagrant.configure("2") do |config|
     config.vm.provider "virtualbox" do |v|
       v.customize ["modifyvm", :id, "--cpuexecutioncap", "100"]
       v.customize ["modifyvm", :id, "--memory", "4096"]
+
+      # fix VBoxManage error create logfile on the path from the machine that created this base box
+      v.customize [ "modifyvm", :id, "--uartmode1", "disconnected"]
     end
   end
 
@@ -32,9 +35,6 @@ Vagrant.configure("2") do |config|
     common_config[composerbox]
     forward_port[8000]
     forward_port[8080]
-    forward_port[7050]
-    forward_port[7051]
-    forward_port[7054]
     forward_port[4001]
     forward_port[5001]
     forward_port[9000]

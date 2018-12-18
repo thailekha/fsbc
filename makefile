@@ -1,3 +1,6 @@
+# ===================
+# Installations and configs
+# ===================
 install-ipfs:
 	wget -q -P /tmp/ https://dist.ipfs.io/go-ipfs/v0.4.17/go-ipfs_v0.4.17_linux-amd64.tar.gz
 	tar xvfz /tmp/go-ipfs_v0.4.17_linux-amd64.tar.gz -C /tmp
@@ -8,6 +11,25 @@ config-ipfs:
 	ipfs init
 	ipfs config Addresses.API /ip4/0.0.0.0/tcp/5001
 	ipfs config Addresses.Gateway /ip4/0.0.0.0/tcp/4040
+install-sonar-scanner:
+	wget -q https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-3.2.0.1227-linux.zip
+	unzip -q sonar-scanner-cli-3.2.0.1227-linux.zip
+install-yarn:
+	curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
+	echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
+	sudo apt-get update && sudo apt-get install --no-install-recommends yarn
+install-ngrok:
+	wget -q https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip
+	unzip -q ngrok-stable-linux-amd64.zip
+	rm ngrok-stable-linux-amd64.zip
+# ===================
+# Utils
+# ===================
+sleep-3:
+	sleep 3
+# ===================
+# Dev
+# ===================
 start-composer:
 	export FABRIC_VERSION=hlfv12
 	cd ~/fabric-dev-servers && ./startFabric.sh
@@ -30,11 +52,6 @@ init-business-network:
 	# clean up
 	rm dfs@*
 	rm *.card
-sleep-3:
-	sleep 3
-fresh-vm: start-composer sleep-3 init-business-network install-ipfs config-ipfs
-	ipfs daemon &
-	cd server && npm run dev
 update-business-network:
 	$(eval VERSION=$(shell cd bc && npm version patch > /dev/null && cat package.json | jq --raw-output '.version'))
 	echo $(VERSION)
@@ -43,13 +60,22 @@ update-business-network:
 	composer network upgrade -c PeerAdmin@hlfv1 -n dfs -V $(VERSION)
 	composer network ping -c admin@dfs
 	rm dfs@*
-install-yarn:
-	curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
-	echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
-	sudo apt-get update && sudo apt-get install --no-install-recommends yarn
-# ============
+fresh-vm: start-composer sleep-3 init-business-network install-ipfs config-ipfs
+	ipfs daemon &
+	cd server && npm run dev
+run-ngrok:
+	./ngrok http 9000
+# ===================
+# CI
+# ===================
+travis-build: start-composer sleep-3 init-business-network install-ipfs config-ipfs
+	ipfs daemon &
+	cd server && yarn install && npm run lint && npm run coverage
+sonarcloud: install-sonar-scanner
+	cd server && ../sonar-scanner-3.2.0.1227-linux/bin/sonar-scanner -Dsonar.login=$(SONARTOKEN)
+# ===================
 # TESTS
-# ============
+# ===================
 test-register:
 	curl -v --request POST \
 		--url http://$(server):9000/data/register \
@@ -57,12 +83,14 @@ test-register:
 		--header 'cache-control: no-cache' \
 		--data '{"username": "tom","password": "123","role":"EXPORTER"}'
 login:
+	echo login
 	$(eval TOKEN=$(shell \
 		curl --silent --request POST \
 			--url http://$(server):9000/data/login \
 			--header 'Content-Type: application/json' \
 			--header 'cache-control: no-cache' \
-			--data '{"username": "tom","password": "123","role":"EXPORTER"}' | jq  --raw-output '.token'))
+			--data '{"username": "test-amp2ovh3qjpd5b18j","password": "123","role":"EXPORTER"}' | jq  --raw-output '.token'))
+	echo $(TOKEN)
 post:
 	$(eval GUID=$(shell \
 		curl --silent --request POST \
@@ -77,6 +105,14 @@ get:
 			--url http://$(server):9000/data/$(GUID) \
 			--header 'Authorization: Bearer $(TOKEN)' \
 			--header 'cache-control: no-cache'))
+getAll:
+	echo getALL
+	$(eval RESPONSE=$(shell \
+		curl --silent --request GET \
+			--url http://$(server):9000/data \
+			--header 'Authorization: Bearer $(TOKEN)' \
+			--header 'cache-control: no-cache'))
+	echo $(RESPONSE)
 put:
 	$(eval NEW_GUID=$(shell \
 		curl --silent --request PUT \

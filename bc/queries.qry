@@ -1,3 +1,10 @@
+query getAllData {
+  description: "Get all data from username"
+  statement: 
+    SELECT org.dfs.Data
+    WHERE ( (owner == _$username) OR (authorizedUsers CONTAINS _$username) )
+}
+
 query getData {
   description: "Get Data asset by GUID"
   statement: 
