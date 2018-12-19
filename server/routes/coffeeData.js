@@ -246,7 +246,7 @@ router.get('/', async(req, res, next) => {
         allLatestDataAssets.push(latestDataAsset);
       }
     }
-    allLatestDataAssets.sort((x,y) => x.lastChangedAt > y.lastChangedAt);
+    allLatestDataAssets.sort((x,y) => x.lastChangedAt < y.lastChangedAt);
 
     const allLatestData = [];
     const ipfs = pify(ipfsAPI(process.env.IPFS_HOST, '5001', { protocol: 'http' }));
