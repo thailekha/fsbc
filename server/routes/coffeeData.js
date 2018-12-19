@@ -230,7 +230,7 @@ router.get('/', async(req, res, next) => {
   try {
     const token = req.header('Authorization').split('Bearer ')[1];
     const username = jwt.verify(token, 'secret').username;
-    const businessNetworkDefinition = await clientConnection.connect('admin@dfs');
+    await clientConnection.connect('admin@dfs');
     const allData = await clientConnection.query('getAllData', {
       username: `resource:org.dfs.User#${username}`,
     });
@@ -238,33 +238,23 @@ router.get('/', async(req, res, next) => {
     // if (allData.length === 0) {
     //   throw `Cannot find data ${requestedDataID} or unauthorized user`;
     // }
-    var allLatestDataAssets = new Set();
+    const allLatestDataAssets = [];
 
     for (const data of allData) {
       const latestDataAsset = await getLatest([data], username, clientConnection);
-      if (latestDataAsset) {
-        allLatestDataAssets.add(latestDataAsset);
+      if (latestDataAsset && allLatestDataAssets.findIndex(i => i.$identifier === latestDataAsset.$identifier) < 0) {
+        allLatestDataAssets.push(latestDataAsset);
       }
     }
-
-    allLatestDataAssets = Array.from(allLatestDataAssets);
     allLatestDataAssets.sort((x,y) => x.lastChangedAt > y.lastChangedAt);
 
     const allLatestData = [];
     const ipfs = pify(ipfsAPI(process.env.IPFS_HOST, '5001', { protocol: 'http' }));
-    var counter = allLatestDataAssets.length - 1;
-
-    while (counter >= 0) {
-      const ipfsResponse = await ipfs.files.cat(allLatestDataAssets[counter].$identifier);
-
-      const dataToAdd = {
-        guid: allLatestDataAssets[counter].$identifier,
-        data: JSON.parse(ipfsResponse.toString())
-      };
-
-      if (allLatestData.findIndex(i => i.guid === dataToAdd.guid) < 0)
-        allLatestData.push(dataToAdd);
-      counter--;
+    for (const guid of allLatestDataAssets.map(d => d.$identifier)) {
+      allLatestData.push({
+        guid,
+        data: JSON.parse((await ipfs.files.cat(guid)).toString())
+      });
     }
 
     res

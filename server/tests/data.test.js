@@ -197,3 +197,56 @@ describe('getLatest', async() => {
     assert.deepEqual(resGetAll.body[1].data, data1);
   });
 });
+
+describe('getLatest', async() => {
+  it('should register, login, post 1 data asset, update it, get all data, only 1 asset should be returned', async() => {
+    const user = generateUser();
+
+    const initialData = {
+      coffee: `mocha-${uniqid()}`
+    };
+    const updatedData = {
+      fruit: `dragonfruit-${uniqid()}`
+    };
+
+    await request(app)
+      .post('/data/register')
+      .set('Content-Type', 'application/json')
+      .send(user)
+      .expect(200);
+
+    const resLogin = await request(app)
+      .post('/data/login')
+      .set('Content-Type', 'application/json')
+      .send(user)
+      .expect(200);
+
+    const token = resLogin.body.token;
+
+    const resPost = await request(app)
+      .post('/data')
+      .set('Content-Type', 'application/json')
+      .set('Authorization', `Bearer ${token}`)
+      .send(initialData)
+      .expect(200);
+    assert.ok(resPost.body.globalUniqueID);
+    expect(resPost.body.globalUniqueID).to.have.lengthOf.above(0);
+
+    const resPut = await request(app)
+      .put(`/data/${resPost.body.globalUniqueID}`)
+      .set('Content-Type', 'application/json')
+      .set('Authorization', `Bearer ${token}`)
+      .send(updatedData)
+      .expect(200);
+    assert.ok(resPut.body.globalUniqueID);
+    expect(resPut.body.globalUniqueID).to.have.lengthOf.above(0);
+
+    const resGetAll = await request(app)
+      .get(`/data/`)
+      .set('Content-Type', 'application/json')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    assert.equal(resGetAll.body.length, 1);
+    assert.deepEqual(resGetAll.body[0].data, updatedData);
+  });
+});
