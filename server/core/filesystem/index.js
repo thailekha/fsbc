@@ -1,5 +1,7 @@
 const router = require('express').Router();
 const fsController = require('./controller');
+const validator = require('../../middlewares/joi-validate');
+const schemas = require('./schemas');
 
 router.get('/', async(req, res, next) => {
   try {
@@ -28,7 +30,7 @@ router.get('/:id/latest', async(req, res, next) => {
   }
 });
 
-router.post('/', async(req, res, next) => {
+router.post('/', validator(schemas.postData), async(req, res, next) => {
   try {
     res.json(await fsController.postData(req.username, req.body));
   } catch (err) {
@@ -39,7 +41,7 @@ router.post('/', async(req, res, next) => {
 
 // from ipfs pov, just like post
 // from composer pov, ...
-router.put('/:id', async(req, res, next) => {
+router.put('/:id', validator(schemas.putData), async(req, res, next) => {
   try {
     res.json(await fsController.putData(req.params.id, req.username, req.body));
   } catch (err) {
@@ -59,7 +61,7 @@ router.get('/:id/trace', async(req, res, next) => {
 
 // TODO: endpoint for getting users based on role
 
-router.put('/:id/grant', async(req, res, next) => {
+router.put('/:id/grant', validator(schemas.grantAccess), async(req, res, next) => {
   try {
     await fsController.grantAccess(req.params.id, req.username, req.body.grantedUsers);
     res.end();
