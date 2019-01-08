@@ -5,6 +5,7 @@
   "scripts": {
     "start": "IPFS_HOST=\"52.1.224.106\" PORT=9000 forever start -l forever.log -o out.log -e err.log ./bin/www",
     "dev": "IPFS_HOST=\"localhost\" PORT=9000 nodemon --ignore './config' -L ./bin/www",
+    "debug-dev": "IPFS_HOST=\"localhost\" PORT=9000 node inspect ./bin/www",
     "lint": "./node_modules/.bin/eslint --fix core/**/*.js middlewares/**/*.js tests/**/*.js bin/www",
     "test": "IPFS_HOST=\"localhost\" PORT=9000 node ./node_modules/mocha/bin/mocha ./tests/data.test.js --timeout 60000 --exit",
     "debug-test": "IPFS_HOST=\"localhost\" PORT=9000 node ./node_modules/mocha/bin/mocha debug ./tests/data.test.js",

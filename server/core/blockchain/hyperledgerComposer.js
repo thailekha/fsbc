@@ -115,17 +115,19 @@ ComposerController.postData = async function(guid, username) {
   const businessNetworkDefinition = await clientConnection.connect('admin@dfs');
   const factory = businessNetworkDefinition.getFactory();
   const dataAsset = factory.newResource('org.dfs', 'Data', guid);
+  const owner = factory.newRelationship('org.dfs', 'User', username);
   const originalName = '';
   dataAsset.originalName = originalName;
   dataAsset.mimetype = 'application/json';
-  dataAsset.owner = factory.newRelationship('org.dfs', 'User', username);
+  dataAsset.owner = owner;
   dataAsset.authorizedUsers = [];
   dataAsset.lastChangedAt = new Date();
+  dataAsset.lastChangedBy = owner;
   await (await clientConnection.getAssetRegistry('org.dfs.Data')).add(dataAsset);
   await clientConnection.disconnect();
 };
 
-ComposerController.putData = async function(oldData, newGuid) {
+ComposerController.putData = async function(oldData, newGuid, username) {
   const businessNetworkDefinition = await clientConnection.connect('admin@dfs');
   const factory = businessNetworkDefinition.getFactory();
   const dataAsset = factory.newResource('org.dfs', 'Data', newGuid);
@@ -136,10 +138,21 @@ ComposerController.putData = async function(oldData, newGuid) {
   dataAsset.owner = factory.newRelationship('org.dfs', 'User', oldData.owner.$identifier);
   dataAsset.lastVersion = factory.newRelationship('org.dfs', 'Data', oldData.$identifier);
   dataAsset.lastChangedAt = new Date();
+  dataAsset.lastChangedBy = factory.newRelationship('org.dfs', 'User', username);
   await (await clientConnection.getAssetRegistry('org.dfs.Data')).add(dataAsset);
   await clientConnection.disconnect();
   return dataAsset;
 };
+
+function constructVersion(record) {
+  const result = {
+    id: record.$identifier,
+    lastChangedAt: record.lastChangedAt,
+    lastChangedBy: record.lastChangedBy.$identifier
+  };
+
+  return JSON.parse(JSON.stringify(result));
+}
 
 ComposerController.traceData = async function(guid, username) {
   await clientConnection.connect('admin@dfs');
@@ -151,11 +164,11 @@ ComposerController.traceData = async function(guid, username) {
     throw `Cannot find data ${guid} or unauthorized user`;
   }
 
-  const allVersionIDs = [];
+  const allVersions = [];
   let point = requestedData[0];
 
   while (point.lastVersion) {
-    allVersionIDs.push(point.$identifier);
+    allVersions.push(constructVersion(point));
 
     const oldData = await clientConnection.query('getData', {
       guid: point.lastVersion.$identifier,
@@ -170,9 +183,9 @@ ComposerController.traceData = async function(guid, username) {
   }
 
   // the oldest data asset has no lastVersion
-  allVersionIDs.push(point.$identifier);
+  allVersions.push(constructVersion(point));
   await clientConnection.disconnect();
-  return allVersionIDs;
+  return allVersions;
 };
 
 ComposerController.grantAccess = async function(guid, username, grantedUsers) {

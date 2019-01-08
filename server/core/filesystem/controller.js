@@ -55,16 +55,19 @@ FilesystemController.postData = async function(username, data) {
 FilesystemController.putData = async function(guid, username, data) {
   const blockchainRecord = await blockchainController.getData(guid, username);
   const newGuid = await storageController.postData(data);
-  const newBlockchainRecord = await blockchainController.putData(blockchainRecord, newGuid);
+  const newBlockchainRecord = await blockchainController.putData(blockchainRecord, newGuid, username);
   await blockchainController.submitPutData(username, blockchainRecord, newBlockchainRecord);
   return { globalUniqueID: newGuid};
 };
 
 FilesystemController.trace = async function(guid, username) {
-  const allVersionIDs = await blockchainController.traceData(guid, username);
+  const allVersionRecords = await blockchainController.traceData(guid, username);
   const allVersions = [];
-  for (const versionID of allVersionIDs) {
-    allVersions.push(await storageController.getData(versionID));
+  for (const record of allVersionRecords) {
+    const data = await storageController.getData(record.id);
+    data.lastChangedAt = record.lastChangedAt;
+    data.lastChangedBy = record.lastChangedBy;
+    allVersions.push(data);
   }
   return allVersions;
 };
