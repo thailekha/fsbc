@@ -1,0 +1,15 @@
+digraph g {
+    expressRouter -> userIndex
+    expressRouter -> filesystemIndex
+
+    filesystemIndex -> filesystemController
+    filesystemController -> blockchainController
+    blockchainController -> hyperledgerComposer
+    blockchainController -> ethereum
+    filesystemController -> storageController
+    storageController -> ipfs
+    storageController -> mongodb
+
+    userIndex -> userController
+    userController -> blockchainController
+}
