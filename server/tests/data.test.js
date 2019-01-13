@@ -11,7 +11,7 @@ const uniqid = require('uniqid');
 
 function generateUser() {
   return {
-    username: `test-${uniqid()}`,
+    username: `test@abc.com.${uniqid()}`,
     password: "123"
   };
 }
@@ -102,9 +102,10 @@ describe('allTasks', async() => {
       .set('Content-Type', 'application/json')
       .set('Authorization', `Bearer ${resLogin1.body.token}`)
       .expect(200);
-    console.log(resTrace.body);
-    assert.deepEqual(resTrace.body[0], data2);
-    assert.deepEqual(resTrace.body[1], data1);
+    assert.ok(resTrace.body[0].coffee);
+    assert.ok(resTrace.body[1].coffee);
+    assert.equal(resTrace.body[0].coffee, data2.coffee);
+    assert.equal(resTrace.body[1].coffee, data1.coffee);
 
     const resGetLatest = await request(app)
       .get(`/v1/fs/${resPost.body.globalUniqueID}/latest`)
