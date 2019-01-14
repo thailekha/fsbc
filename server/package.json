@@ -8,12 +8,12 @@
     "yarn-add": "yarn --modules-folder ~/fsbc/node_modules add",
     "yarn-remove": "yarn --modules-folder ~/fsbc/node_modules remove",
     "lint": "~/fsbc/node_modules/.bin/eslint --fix core/**/*.js middlewares/**/*.js tests/**/*.js bin/www",
-    "production": "npm run prefix forever start -l forever.log -o out.log -e err.log ./bin/www",
-    "dev": "npm run prefix ~/fsbc/node_modules/nodemon/bin/nodemon.js --ignore './config' -L ./bin/www",
-    "debug-dev": "npm run prefix node inspect ./bin/www",
+    "production": "NODE_PATH=~/fsbc/node_modules PORT=9000 forever start -l forever.log -o out.log -e err.log ./bin/www",
+    "dev": "NODE_PATH=~/fsbc/node_modules PORT=9000 ~/fsbc/node_modules/nodemon/bin/nodemon.js --ignore './config' -L ./bin/www",
+    "debug-dev": "NODE_PATH=~/fsbc/node_modules PORT=9000 node inspect ./bin/www",
     "test": "NODE_PATH=~/fsbc/node_modules PORT=9000 node ~/fsbc/node_modules/mocha/bin/mocha ./tests/data.test.js --timeout 60000 --exit",
-    "debug-test": "npm run prefix node ./node_modules/mocha/bin/mocha debug ./tests/data.test.js",
-    "coverage": "npm run prefix ./node_modules/.bin/nyc --reporter=text --reporter=lcov ./node_modules/mocha/bin/mocha ./tests/data.test.js --timeout 60000 --exit"
+    "debug-test": "NODE_PATH=~/fsbc/node_modules PORT=9000 node ./node_modules/mocha/bin/mocha debug ./tests/data.test.js",
+    "coverage": "NODE_PATH=~/fsbc/node_modules PORT=9000 ./node_modules/.bin/nyc --reporter=text --reporter=lcov ./node_modules/mocha/bin/mocha ./tests/data.test.js --timeout 60000 --exit"
   },
   "dependencies": {
     "async": "^2.6.1",
@@ -26,6 +26,7 @@
     "ipfs-api": "25",
     "joi": "^14.3.1",
     "jsonwebtoken": "^8.3.0",
+    "mongoose": "^5.4.3",
     "morgan": "~1.9.0",
     "pify": "^4.0.0",
     "ramda": "^0.26.1",

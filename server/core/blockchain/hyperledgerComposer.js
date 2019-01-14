@@ -198,13 +198,22 @@ ComposerController.grantAccess = async function(guid, username, grantedUsers) {
     throw `Cannot find data ${guid} or unauthorized user`;
   }
   const dataAsset = requestedData[0];
+  const participants = await clientConnection.getParticipantRegistry('org.dfs.User');
   const updatedAuthorizedUsers = Array.from(new Set(grantedUsers)) // no duplicate
     // authorize only usernames that have not been authorized
-    .filter(username => username !== dataAsset.owner.$identifier && !dataAsset.authorizedUsers.find(relationship => relationship.$identifier === username))
-    .map(username => businessNetworkDefinition.getFactory().newRelationship('org.dfs', 'User', username));
+    .filter(username => username !== dataAsset.owner.$identifier)
+    .filter(username => !dataAsset.authorizedUsers.find(relationship => relationship.$identifier === username));
 
-  if (updatedAuthorizedUsers.length > 0) {
-    dataAsset.authorizedUsers = dataAsset.authorizedUsers.concat(updatedAuthorizedUsers);
+  const validAuthorizedUsers = [];
+  for (const username of updatedAuthorizedUsers) {
+    const exist = await participants.exists(username);
+    if (exist) {
+      validAuthorizedUsers.push(businessNetworkDefinition.getFactory().newRelationship('org.dfs', 'User', username));
+    }
+  }
+
+  if (validAuthorizedUsers.length > 0) {
+    dataAsset.authorizedUsers = dataAsset.authorizedUsers.concat(validAuthorizedUsers);
     await (await clientConnection.getAssetRegistry('org.dfs.Data')).update(dataAsset);
   }
   await clientConnection.disconnect();
