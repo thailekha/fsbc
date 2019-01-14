@@ -1,13 +1,31 @@
 SHELL := /usr/bin/env bash
 
 # make ipfs daemon restart if crash?
+# avoid using sudo in any recipe that affects the codebase directory
 multinode-env:
+	$(call VAGRANT_UP_SERVER,1)
+	$(call VAGRANT_UP_SERVER,2)
+	$(call VAGRANT_UP_SERVER,3)
 	vagrant up composer-machine
 	vagrant ssh composer-machine -- -t '$(INIT_NVM) && cd /mnt/vagrant && make business-network'
 	vagrant up ipfs1
 	vagrant ssh ipfs1 -- -t 'cd /mnt/vagrant && make ipfs-machine'
 	vagrant up ipfs2
 	vagrant ssh ipfs2 -- -t 'cd /mnt/vagrant && make ipfs-machine && make discover-ipfs-peers'
+multinode-env-test:
+	$(call VAGRANT_UP_SERVER,1)
+	$(call VAGRANT_UP_SERVER,2)
+	$(call VAGRANT_UP_SERVER,3)
+define VAGRANT_UP_SERVER
+vagrant destroy -f server-machine$1
+# installing dependencies, esp. yarn requires high RAM
+RAM=2046 vagrant up server-machine$1
+vagrant ssh server-machine$1 -- -t 'cd /mnt/vagrant && make api-preqreq'
+vagrant ssh server-machine$1 -- -t 'sudo npm install -g forever'
+vagrant halt server-machine$1
+RAM=256 vagrant up server-machine$1
+vagrant ssh server-machine$1 -- -t 'cd /mnt/vagrant/server && npm run production'
+endef
 singlenode-env:
 	vagrant destroy -f dev-machine
 	vagrant up dev-machine
@@ -101,15 +119,15 @@ clean-composer:
 # IPFS
 # ===================
 define IPFS_DAEMON
-echo $(shell ipfs daemon > /dev/null 2>&1 &)
+echo $(shell ipfs daemon > /dev/null 2>&1 &) && sleep 2
 endef
 ipfs-machine: ipfs-command config-ipfs config-ipfs-private
 	$(IPFS_DAEMON)
 # https://github.com/ipfs/apps/issues/34
+# https://askubuntu.com/questions/309668/how-to-discover-the-ip-addresses-within-a-network-with-a-bash-script
 discover-ipfs-peers: arp-scan-command
 	$(eval INTERFACES=$(shell ifconfig -a | awk '{print $$1}' | grep enp))
 	for INTERFACE in $(INTERFACES); do \
-		# https://askubuntu.com/questions/309668/how-to-discover-the-ip-addresses-within-a-network-with-a-bash-script
 		IPS=$$(sudo arp-scan --numeric --quiet --ignoredups --localnet --interface=$$INTERFACE | awk '/([a-f0-9]{2}:){5}[a-f0-9]{2}/ {print $$1}') ; \
 		for IP in $$IPS; do \
 			ipfs swarm connect /ip4/$$IP/tcp/4001/ipfs/$$(curl --silent $$IP:5001/api/v0/id -m 2 | jq --raw-output '.ID') || continue; \
@@ -137,11 +155,8 @@ kill-ipfs:
 # ===================
 # API server
 # ===================
-api-server:
-	vagrant up server-machine
-	vagrant ssh server-machine -- -t 'cd /mnt/vagrant && make api'
-api: install-nodejs yarn-command
-	cd /mnt/vagrant/server && yarn install && npm start
+api-preqreq: install-nodejs yarn-command
+	cd /mnt/vagrant/server && npm run yarn-install
 # ===================
 # CI
 # ===================
@@ -178,7 +193,7 @@ install-go:
 go-command:
 	$(call install-command,go)
 install-nodejs:
-	curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
+	curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash -
 	sudo apt-get install -y nodejs
 install-yarn:
 	curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
@@ -210,3 +225,5 @@ gen-ipfs-swarm-key: go-command
 	$(HOME)/gopath/bin/ipfs-swarm-key-gen > ~/.ipfs/swarm.key
 run-ngrok:
 	./ngrok http 9000
+ssh-to-physical-server-from-mac:
+	ssh -o PubkeyAuthentication=no dev@hostname.com
