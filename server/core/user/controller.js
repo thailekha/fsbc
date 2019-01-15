@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const blockchainController = require('../blockchain/controller');
+const mongodb = require('../storage/mongodb');
 
 const UserController = {};
 
@@ -19,6 +20,12 @@ function sha512(password, salt) {
 UserController.register = async function(username, password, role) {
   const salt = genRandomString(16);
   await blockchainController.registerParticipant(username, role, salt, sha512(password, salt));
+  await mongodb.postUser({
+    username: username,
+    hashedPassword: sha512(password, salt),
+    salt: salt,
+    role: role
+  });
 };
 
 UserController.login = async function(username, password) {

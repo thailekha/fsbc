@@ -1,5 +1,6 @@
 const blockchainController = require('../blockchain/controller');
 const storageController = require('../storage/controller');
+const mongodb = require('../storage/mongodb');
 
 const FilesystemController = {};
 
@@ -46,9 +47,25 @@ FilesystemController.getLatestData = async function(guid, username) {
 };
 
 FilesystemController.postData = async function(username, data) {
+  data._dateAdded = new Date();
   const guid = await storageController.postData(data);
-  await blockchainController.postData(guid, username);
+  const dataAsset = await blockchainController.postData(guid, username);
   await blockchainController.submitPostData(username, guid);
+  await mongodb.postData({
+    guid: guid,
+    data: JSON.stringify(data)
+  });
+  await mongodb.postDataAsset({
+    guid: guid,
+    originalName: dataAsset.originalName,
+    mimetype: dataAsset.mimetype,
+    lastChangedAt: dataAsset.lastChangedAt,
+    active: 1,
+    owner: dataAsset.owner,
+    lastChangedBy: dataAsset.lastChangedBy,
+    authorizedUsers: dataAsset.authorizedUsers,
+    lastVersion: ''
+  });
   return { globalUniqueID: guid};
 };
 
@@ -57,6 +74,21 @@ FilesystemController.putData = async function(guid, username, data) {
   const newGuid = await storageController.postData(data);
   const newBlockchainRecord = await blockchainController.putData(blockchainRecord, newGuid, username);
   await blockchainController.submitPutData(username, blockchainRecord, newBlockchainRecord);
+  await mongodb.postData({
+    guid: newGuid,
+    data: JSON.stringify(data)
+  });
+  await mongodb.postDataAsset({
+    guid: newGuid,
+    originalName: newBlockchainRecord.originalName,
+    mimetype: newBlockchainRecord.mimetype,
+    lastChangedAt: newBlockchainRecord.lastChangedAt,
+    active: 1,
+    owner: newBlockchainRecord.owner,
+    lastChangedBy: newBlockchainRecord.lastChangedBy,
+    authorizedUsers: newBlockchainRecord.authorizedUsers,
+    lastVersion: newBlockchainRecord.lastVersion
+  });
   return { globalUniqueID: newGuid};
 };
 
@@ -74,6 +106,11 @@ FilesystemController.trace = async function(guid, username) {
 
 FilesystemController.grantAccess = async function(guid, username, grantedUsers) {
   await blockchainController.grantAccess(guid, username, grantedUsers);
+  const blockchainRecord = await blockchainController.getData(guid, username);
+  await mongodb.putDataAsset(guid, {
+    authorizedUsers: blockchainRecord.authorizedUsers,
+  });
+
 };
 
 module.exports = FilesystemController;

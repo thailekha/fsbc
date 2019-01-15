@@ -125,6 +125,7 @@ ComposerController.postData = async function(guid, username) {
   dataAsset.lastChangedBy = owner;
   await (await clientConnection.getAssetRegistry('org.dfs.Data')).add(dataAsset);
   await clientConnection.disconnect();
+  return dataAsset;
 };
 
 ComposerController.putData = async function(oldData, newGuid, username) {
