@@ -19,6 +19,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
+app.use('/ping', (req, res) => res.send('Pong'));
 app.use('/v1/user', userRouter);
 app.use(jwtAuthenticate({ secret: 'secret' }));
 app.use('/v1/fs', fsRouter);

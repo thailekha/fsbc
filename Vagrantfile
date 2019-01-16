@@ -68,7 +68,8 @@ Vagrant.configure("2") do |vagrant_conf|
     vagrant_conf.vm.define "server-machine#{i}" do |config|
       ENV["RAM"].nil? ? common_config(config) : common_config(config, ENV["RAM"])
       config.vm.box = "ubuntu/xenial64"
-      config.vm.network "public_network", bridge: BRIDGE_INTERFACE
+      forward_port(config, 9000, 9090 + i)
+      config.vm.network "public_network"
     end
   end
 
