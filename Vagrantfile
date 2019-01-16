@@ -34,8 +34,16 @@ def common_config(config, memory = "512")
 
   # make sure `make` is available
   config.vm.provision "shell", inline: <<-SHELL
-    apt-get update
-    which make || apt-get install -y build-essential
+    rm /var/lib/apt/lists/lock
+    rm /var/cache/apt/archives/lock
+    rm /var/lib/dpkg/lock
+    dpkg --configure -a
+    apt-get -f install -y
+    function install-make() {
+      apt-get update
+      apt-get install -y build-essential
+    }
+    which make || install-make
   SHELL
 end
 
