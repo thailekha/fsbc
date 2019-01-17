@@ -15,11 +15,11 @@ function splitTrimFilter(str) {
 }
 
 async function shellexec(command, checkStderrForError = true, parseOutput = true) {
-  ({code, stdout, stderr} = await exec(command, {silent:true}));
+  const {code, stdout, stderr} = await exec(command, {silent:true});
   if (code !== 0 || (checkStderrForError && stderr)) {
     throw new Error(`Command ${command} resulted in code: ${code}, stderr: ${stderr}`);
   }
-  console.log(stdout);
+  // console.log(stdout);
   return parseOutput ? splitTrimFilter(stdout) : stdout;
 }
 

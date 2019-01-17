@@ -79,7 +79,7 @@ describe('allTasks', async() => {
       .set('Content-Type', 'application/json')
       .set('Authorization', `Bearer ${resLogin1.body.token}`)
       .expect(200);
-    assert.deepEqual(resGet1.body, data1);
+    assert.deepEqual(resGet1.body.coffee, data1.coffee);
 
     const resPut = await request(app)
       .put(`/v1/fs/${resPost.body.globalUniqueID}`)
@@ -112,7 +112,7 @@ describe('allTasks', async() => {
       .set('Content-Type', 'application/json')
       .set('Authorization', `Bearer ${resLogin1.body.token}`)
       .expect(200);
-    assert.equal(resPut.body.globalUniqueID, resGetLatest.body.latestGlobalUniqueID);
+    assert.equal(resPut.body.globalUniqueID, resGetLatest.body.guid);
     assert.deepEqual(resGetLatest.body.data, data2);
 
     await request(app)
@@ -197,10 +197,9 @@ describe('getLatest', async() => {
       .set('Content-Type', 'application/json')
       .set('Authorization', `Bearer ${resLogin1.body.token}`)
       .expect(200);
-    console.log(resGetAll.body);
     assert.equal(resGetAll.body.length, 2);
-    assert.deepEqual(resGetAll.body[0].data, data2);
-    assert.deepEqual(resGetAll.body[1].data, data1);
+    assert.deepEqual(resGetAll.body[0].data.fruit, data2.fruit);
+    assert.deepEqual(resGetAll.body[1].data.coffee, data1.coffee);
   });
 
   it('should register, login, post 1 data asset, update it, get all data, only 1 asset should be returned', async() => {
@@ -251,6 +250,6 @@ describe('getLatest', async() => {
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
     assert.equal(resGetAll.body.length, 1);
-    assert.deepEqual(resGetAll.body[0].data, updatedData);
+    assert.deepEqual(resGetAll.body[0].data.fruit, updatedData.fruit);
   });
 });

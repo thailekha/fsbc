@@ -43,7 +43,7 @@ FilesystemController.getLatestData = async function(guid, username) {
 
   const data = await storageController.getData(latestGlobalUniqueID);
   // await blockchainController.submitGetData(username, guid);
-  return { latestGlobalUniqueID, data };
+  return { guid: latestGlobalUniqueID, data };
 };
 
 FilesystemController.postData = async function(username, data) {
@@ -110,7 +110,6 @@ FilesystemController.grantAccess = async function(guid, username, grantedUsers) 
   await mongodb.putDataAsset(guid, {
     authorizedUsers: blockchainRecord.authorizedUsers,
   });
-
 };
 
 module.exports = FilesystemController;

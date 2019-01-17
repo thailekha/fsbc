@@ -12,10 +12,25 @@ const connectionOptions = {
   },
 };
 
-const clientConnection = new BC(connectionOptions);
+const client = new BC(connectionOptions);
+let clientConnection;
+
+async function getConnection() {
+  if (!clientConnection) {
+    clientConnection = await client.connect('admin@dfs');
+  } else {
+    try {
+      await clientConnection.ping();
+    } catch (e) {
+      clientConnection = await client.connect('admin@dfs');
+    }
+  }
+
+  return clientConnection;
+}
 
 async function submitTransactionAsset(transactionName, opts) {
-  const businessNetworkDefinition = await clientConnection.connect('admin@dfs');
+  const businessNetworkDefinition = await getConnection();
   const factory = businessNetworkDefinition.getFactory();
   const transaction = factory.newResource('org.dfs', transactionName, uniqid());
   transaction.timestamp = new Date();
@@ -25,8 +40,7 @@ async function submitTransactionAsset(transactionName, opts) {
       transaction[key] = options[key];
     }
   }
-  await (await clientConnection.getAssetRegistry(`org.dfs.${transactionName}`)).add(transaction);
-  await clientConnection.disconnect();
+  await (await client.getAssetRegistry(`org.dfs.${transactionName}`)).add(transaction);
 }
 
 ComposerController.submitGetData = async(accessor, data) => await submitTransactionAsset('GetData', factory => ({
@@ -46,21 +60,19 @@ ComposerController.submitPutData = async(updater, oldData, newData) => await sub
 }));
 
 ComposerController.registerParticipant = async function(username, role, salt, hashedPassword) {
-  const businessNetworkDefinition = await clientConnection.connect('admin@dfs');
+  const businessNetworkDefinition = await getConnection();
   const newParticipant = businessNetworkDefinition
     .getFactory()
     .newResource('org.dfs', 'User', username);
   newParticipant.role = role;
   newParticipant.salt = salt;
   newParticipant.hashedPassword = hashedPassword;
-  await (await clientConnection.getParticipantRegistry('org.dfs.User')).add(newParticipant);
-  await clientConnection.disconnect();
+  await (await client.getParticipantRegistry('org.dfs.User')).add(newParticipant);
 };
 
 ComposerController.queryGetUser = async function(username) {
-  await clientConnection.connect('admin@dfs');
-  const filteredParticipants = await clientConnection.query('getUser', { username });
-  await clientConnection.disconnect();
+  await getConnection();
+  const filteredParticipants = await client.query('getUser', { username });
   if (filteredParticipants.length !== 1) {
     throw `Cannot find user ${username}`;
   }
@@ -68,16 +80,15 @@ ComposerController.queryGetUser = async function(username) {
 };
 
 ComposerController.getAllData = async function(username) {
-  await clientConnection.connect('admin@dfs');
-  const allData = await clientConnection.query('getAllData', {
+  await getConnection();
+  const allData = await client.query('getAllData', {
     username: `resource:org.dfs.User#${username}`,
   });
-  await clientConnection.disconnect();
   return allData;
 };
 
 ComposerController.getLatestData = async function(currentDataAsset, username) {
-  await clientConnection.connect('admin@dfs');
+  await getConnection();
   // in case of loop
   const checked = new Set([]);
   let latestDataAsset;
@@ -89,22 +100,20 @@ ComposerController.getLatestData = async function(currentDataAsset, username) {
     // }
     checked.add(requestedData[0].$identifier);
     latestDataAsset = requestedData[0];
-    requestedData = await clientConnection.query('getNewerVersionOfData', {
+    requestedData = await client.query('getNewerVersionOfData', {
       guid: `resource:org.dfs.Data#${latestDataAsset.$identifier}`,
       username: `resource:org.dfs.User#${username}`,
     });
   }
-  await clientConnection.disconnect();
   return latestDataAsset;
 };
 
 ComposerController.getData = async function(guid, username) {
-  await clientConnection.connect('admin@dfs');
-  const requestedData = await clientConnection.query('getData', {
+  await getConnection();
+  const requestedData = await client.query('getData', {
     guid,
     username: `resource:org.dfs.User#${username}`,
   });
-  await clientConnection.disconnect();
   if (requestedData.length !== 1) {
     throw `Cannot find data ${guid} or unauthorized user`;
   }
@@ -112,7 +121,7 @@ ComposerController.getData = async function(guid, username) {
 };
 
 ComposerController.postData = async function(guid, username) {
-  const businessNetworkDefinition = await clientConnection.connect('admin@dfs');
+  const businessNetworkDefinition = await getConnection();
   const factory = businessNetworkDefinition.getFactory();
   const dataAsset = factory.newResource('org.dfs', 'Data', guid);
   const owner = factory.newRelationship('org.dfs', 'User', username);
@@ -123,13 +132,12 @@ ComposerController.postData = async function(guid, username) {
   dataAsset.authorizedUsers = [];
   dataAsset.lastChangedAt = new Date();
   dataAsset.lastChangedBy = owner;
-  await (await clientConnection.getAssetRegistry('org.dfs.Data')).add(dataAsset);
-  await clientConnection.disconnect();
+  await (await client.getAssetRegistry('org.dfs.Data')).add(dataAsset);
   return dataAsset;
 };
 
 ComposerController.putData = async function(oldData, newGuid, username) {
-  const businessNetworkDefinition = await clientConnection.connect('admin@dfs');
+  const businessNetworkDefinition = await getConnection();
   const factory = businessNetworkDefinition.getFactory();
   const dataAsset = factory.newResource('org.dfs', 'Data', newGuid);
   const originalName = '';
@@ -140,8 +148,7 @@ ComposerController.putData = async function(oldData, newGuid, username) {
   dataAsset.lastVersion = factory.newRelationship('org.dfs', 'Data', oldData.$identifier);
   dataAsset.lastChangedAt = new Date();
   dataAsset.lastChangedBy = factory.newRelationship('org.dfs', 'User', username);
-  await (await clientConnection.getAssetRegistry('org.dfs.Data')).add(dataAsset);
-  await clientConnection.disconnect();
+  await (await client.getAssetRegistry('org.dfs.Data')).add(dataAsset);
   return dataAsset;
 };
 
@@ -156,8 +163,8 @@ function constructVersion(record) {
 }
 
 ComposerController.traceData = async function(guid, username) {
-  await clientConnection.connect('admin@dfs');
-  const requestedData = await clientConnection.query('getData', {
+  await getConnection();
+  const requestedData = await client.query('getData', {
     guid,
     username: `resource:org.dfs.User#${username}`,
   });
@@ -171,7 +178,7 @@ ComposerController.traceData = async function(guid, username) {
   while (point.lastVersion) {
     allVersions.push(constructVersion(point));
 
-    const oldData = await clientConnection.query('getData', {
+    const oldData = await client.query('getData', {
       guid: point.lastVersion.$identifier,
       username: `resource:org.dfs.User#${username}`,
     });
@@ -185,13 +192,12 @@ ComposerController.traceData = async function(guid, username) {
 
   // the oldest data asset has no lastVersion
   allVersions.push(constructVersion(point));
-  await clientConnection.disconnect();
   return allVersions;
 };
 
 ComposerController.grantAccess = async function(guid, username, grantedUsers) {
-  const businessNetworkDefinition = await clientConnection.connect('admin@dfs');
-  const requestedData = await clientConnection.query('getData', {
+  const businessNetworkDefinition = await getConnection();
+  const requestedData = await client.query('getData', {
     guid,
     username: `resource:org.dfs.User#${username}`,
   });
@@ -199,7 +205,7 @@ ComposerController.grantAccess = async function(guid, username, grantedUsers) {
     throw `Cannot find data ${guid} or unauthorized user`;
   }
   const dataAsset = requestedData[0];
-  const participants = await clientConnection.getParticipantRegistry('org.dfs.User');
+  const participants = await client.getParticipantRegistry('org.dfs.User');
   const updatedAuthorizedUsers = Array.from(new Set(grantedUsers)) // no duplicate
     // authorize only usernames that have not been authorized
     .filter(username => username !== dataAsset.owner.$identifier)
@@ -215,9 +221,8 @@ ComposerController.grantAccess = async function(guid, username, grantedUsers) {
 
   if (validAuthorizedUsers.length > 0) {
     dataAsset.authorizedUsers = dataAsset.authorizedUsers.concat(validAuthorizedUsers);
-    await (await clientConnection.getAssetRegistry('org.dfs.Data')).update(dataAsset);
+    await (await client.getAssetRegistry('org.dfs.Data')).update(dataAsset);
   }
-  await clientConnection.disconnect();
 };
 
 module.exports = ComposerController;
