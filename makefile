@@ -43,7 +43,7 @@ export NVM_DIR="$${HOME}/.nvm"; \
 endef
 # <If need to packge the vm using the base mode:>
 # PACKAGING=true vagrant up composer-empty
-# vagrant ssh
+# vagrant ssh composer-empty
 #	wget "https://raw.githubusercontent.com/mitchellh/vagrant/master/keys/vagrant.pub"
 #	mv vagrant.pub .ssh/authorized_keys
 #	chmod 0600 .ssh/authorized_keys

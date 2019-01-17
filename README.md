@@ -1,7 +1,12 @@
 # FSBC
 ![](https://travis-ci.org/thailekha/fsbc.svg?branch=master)
 
-# Build composer box on Windows:
+# Notes
+- Do not disconnect connections to hyperledger/mongodb. Leave them on.
+
+# Windows guide
+## Build composer box:
+```
 vagrant destroy -f composer-empty
 vagrant up composer-empty
 vagrant ssh composer-empty
@@ -15,9 +20,11 @@ vagrant package composer-empty --output fsbc-composer.box
 vagrant box remove fsbc/composer || echo Box not previously added
 vagrant box add fsbc/composer fsbc-composer.box
 vagrant destroy -f composer-empty
-
-# Create Dev VM
+```
+## Create Dev VM
+```
 vagrant destroy -f dev-machine
 vagrant up dev-machine
 vagrant ssh dev-machine
     cd /mnt/vagrant && make singlenode
+```
