@@ -15,5 +15,7 @@ BlockchainController.postData = composer.postData;
 BlockchainController.putData = composer.putData;
 BlockchainController.traceData = composer.traceData;
 BlockchainController.grantAccess = composer.grantAccess;
+BlockchainController.revokeAccess = composer.revokeAccess;
+BlockchainController.getAccessInfo = composer.getAccessInfo;
 
 module.exports = BlockchainController;
