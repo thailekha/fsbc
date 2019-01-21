@@ -71,4 +71,23 @@ router.put('/:id/grant', validator(schemas.grantAccess), async(req, res, next) =
   }
 });
 
+router.put('/:id/revoke', validator(schemas.revokeAccess), async(req, res, next) => {
+  try {
+    await fsController.revokeAccess(req.params.id, req.username, req.body.userToBeRevoked);
+    res.end();
+  } catch (err) {
+    console.log(err);
+    next(err);
+  }
+});
+
+router.get('/:id/access', async(req, res, next) => {
+  try {
+    res.json(await fsController.getAccessInfo(req.params.id, req.username));
+  } catch (err) {
+    console.log(err);
+    next(err);
+  }
+});
+
 module.exports = router;

@@ -110,7 +110,19 @@ FilesystemController.grantAccess = async function(guid, username, grantedUsers) 
   await mongodb.putDataAsset(guid, {
     authorizedUsers: blockchainRecord.authorizedUsers,
   });
+};
 
+FilesystemController.revokeAccess = async function(guid, username, userToBeRevoked) {
+  await blockchainController.revokeAccess(guid, username, userToBeRevoked);
+  const blockchainRecord = await blockchainController.getData(guid, username);
+  await mongodb.putDataAsset(guid, {
+    authorizedUsers: blockchainRecord.authorizedUsers,
+  });
+};
+
+FilesystemController.getAccessInfo = async function(guid, username) {
+  const grantedUsers = await blockchainController.getAccessInfo(guid, username);
+  return { grantedUsers };
 };
 
 module.exports = FilesystemController;
