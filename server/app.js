@@ -8,6 +8,7 @@ const fileUpload = require('express-fileupload');
 const jwtAuthenticate = require('./middlewares/jwt-authenticate');
 const userRouter = require('./core/user');
 const fsRouter = require('./core/filesystem');
+const errorHandler = require('./middlewares/error-handler');
 
 var app = express();
 
@@ -23,5 +24,6 @@ app.use('/ping', (req, res) => res.send('Pong'));
 app.use('/v1/user', userRouter);
 app.use(jwtAuthenticate({ secret: 'secret' }));
 app.use('/v1/fs', fsRouter);
+app.use(errorHandler);
 
 module.exports = app;

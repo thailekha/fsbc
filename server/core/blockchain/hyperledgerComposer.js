@@ -1,5 +1,7 @@
 const uniqid = require('uniqid');
 const BC = require('composer-client').BusinessNetworkConnection;
+const statusCodes = require('http-status-codes');
+const utils = require('../utils');
 
 const ComposerController = {};
 
@@ -67,14 +69,19 @@ ComposerController.registerParticipant = async function(username, role, salt, ha
   newParticipant.role = role;
   newParticipant.salt = salt;
   newParticipant.hashedPassword = hashedPassword;
-  await (await client.getParticipantRegistry('org.dfs.User')).add(newParticipant);
+  const registry = await client.getParticipantRegistry('org.dfs.User');
+  try {
+    await registry.add(newParticipant);
+  } catch (error) {
+    throw utils.formatError(error, 'already exists', 'Email already registered', statusCodes.CONFLICT, 'Cannot register');
+  }
 };
 
 ComposerController.queryGetUser = async function(username) {
   await getConnection();
   const filteredParticipants = await client.query('getUser', { username });
   if (filteredParticipants.length !== 1) {
-    throw `Cannot find user ${username}`;
+    throw utils.constructError(`Email is incorrect`, statusCodes.BAD_REQUEST);
   }
   return filteredParticipants[0];
 };
@@ -115,7 +122,7 @@ ComposerController.getData = async function(guid, username) {
     username: `resource:org.dfs.User#${username}`,
   });
   if (requestedData.length !== 1) {
-    throw `Cannot find data ${guid} or unauthorized user`;
+    throw utils.constructError(`Cannot find data ${guid} or unauthorized user`, statusCodes.NOT_FOUND);
   }
   return requestedData[0];
 };
@@ -169,7 +176,7 @@ ComposerController.traceData = async function(guid, username) {
     username: `resource:org.dfs.User#${username}`,
   });
   if (requestedData.length !== 1) {
-    throw `Cannot find data ${guid} or unauthorized user`;
+    throw utils.constructError(`Cannot find data ${guid} or unauthorized user`, statusCodes.NOT_FOUND);
   }
 
   const allVersions = [];
@@ -184,7 +191,7 @@ ComposerController.traceData = async function(guid, username) {
     });
 
     if (oldData.length !== 1) {
-      throw `Could not trace data ${point.lastVersion.$identifier} or unauthorized user`;
+      throw utils.constructError(`Could not trace data ${point.lastVersion.$identifier} or unauthorized user`, statusCodes.NOT_FOUND);
     }
 
     point = oldData[0];
@@ -202,7 +209,7 @@ ComposerController.grantAccess = async function(guid, username, grantedUsers) {
     username: `resource:org.dfs.User#${username}`,
   });
   if (requestedData.length !== 1) {
-    throw `Cannot find data ${guid} or unauthorized user`;
+    throw utils.constructError(`Cannot find data ${guid} or unauthorized user`, statusCodes.NOT_FOUND);
   }
   const dataAsset = requestedData[0];
   const participants = await client.getParticipantRegistry('org.dfs.User');

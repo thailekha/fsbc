@@ -15,7 +15,6 @@ FilesystemController.getAllData = async function(username) {
   }
   allLatestDataAssets.sort((x,y) => x.lastChangedAt < y.lastChangedAt);
   // console.log(allLatestDataAssets.map(d => d.lastChangedAt));
-  // debugger;
   const allLatestData = [];
   for (const guid of allLatestDataAssets.map(d => d.$identifier)) {
     const data = await storageController.getData(guid);

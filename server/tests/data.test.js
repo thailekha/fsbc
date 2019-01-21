@@ -4,6 +4,7 @@ const chai = require('chai');
 const app = require('../bin/www');
 const expect = chai.expect;
 const uniqid = require('uniqid');
+const statusCodes = require('http-status-codes');
 
 // const username = `test-${uniqid()}`;
 // const password = "123";
@@ -23,8 +24,8 @@ function addRole(user) {
 }
 
 describe('User management', function() {
-  const user = generateUser();
   it('should register', async() => {
+    const user = generateUser();
     await request(app)
       .post('/v1/user/register')
       .set('Content-Type', 'application/json')
@@ -32,6 +33,12 @@ describe('User management', function() {
       .expect(200);
   });
   it('should login', async() => {
+    const user = generateUser();
+    await request(app)
+      .post('/v1/user/register')
+      .set('Content-Type', 'application/json')
+      .send(addRole(user))
+      .expect(200);
     const {body: {token}} = await request(app)
       .post('/v1/user/login')
       .set('Content-Type', 'application/json')
@@ -39,6 +46,107 @@ describe('User management', function() {
       .expect(200);
     assert.ok(token);
     expect(token).to.have.lengthOf.above(0);
+  });
+  it('should not add duplicate user', async() => {
+    const user = generateUser();
+    await request(app)
+      .post('/v1/user/register')
+      .set('Content-Type', 'application/json')
+      .send(addRole(user))
+      .expect(200);
+    const res = await request(app)
+      .post('/v1/user/register')
+      .set('Content-Type', 'application/json')
+      .send(addRole(user))
+      .expect(statusCodes.CONFLICT);
+    assert.equal(res.body.message, 'Email already registered');
+  });
+  it('should not allow user not exist login', async() => {
+    const user = generateUser();
+    await request(app)
+      .post('/v1/user/register')
+      .set('Content-Type', 'application/json')
+      .send(addRole(user))
+      .expect(200);
+    user.username += 'wrong-email';
+    const res = await request(app)
+      .post('/v1/user/login')
+      .set('Content-Type', 'application/json')
+      .send(user)
+      .expect(statusCodes.BAD_REQUEST);
+    assert.equal(res.body.message, 'Email is incorrect');
+  });
+  it('should not allow wrong password login', async() => {
+    const user = generateUser();
+    await request(app)
+      .post('/v1/user/register')
+      .set('Content-Type', 'application/json')
+      .send(addRole(user))
+      .expect(200);
+    user.password += 'wrongpassword';
+    const res = await request(app)
+      .post('/v1/user/login')
+      .set('Content-Type', 'application/json')
+      .send(user)
+      .expect(statusCodes.BAD_REQUEST);
+    assert.equal(res.body.message, 'Password is incorrect');
+  });
+});
+
+describe('get data', async() => {
+  it('should get data', async() => {
+    const user = generateUser();
+
+    const data = {
+      coffee: `mocha-${uniqid()}`
+    };
+
+    await request(app)
+      .post('/v1/user/register')
+      .set('Content-Type', 'application/json')
+      .send(addRole(user))
+      .expect(200);
+
+    const resLogin = await request(app)
+      .post('/v1/user/login')
+      .set('Content-Type', 'application/json')
+      .send(user)
+      .expect(200);
+
+    const token = resLogin.body.token;
+
+    const resPost = await request(app)
+      .post('/v1/fs')
+      .set('Content-Type', 'application/json')
+      .set('Authorization', `Bearer ${token}`)
+      .send(data)
+      .expect(200);
+
+    await request(app)
+      .get(`/v1/fs/${resPost.body.globalUniqueID}`)
+      .set('Content-Type', 'application/json')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+  });
+
+  it('should not get unexisting data', async() => {
+    const user = generateUser();
+    await request(app)
+      .post('/v1/user/register')
+      .set('Content-Type', 'application/json')
+      .send(addRole(user))
+      .expect(200);
+    const resLogin = await request(app)
+      .post('/v1/user/login')
+      .set('Content-Type', 'application/json')
+      .send(user)
+      .expect(200);
+    const token = resLogin.body.token;
+    await request(app)
+      .get(`/v1/fs/wrong1234554321`)
+      .set('Content-Type', 'application/json')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(statusCodes.NOT_FOUND);
   });
 });
 

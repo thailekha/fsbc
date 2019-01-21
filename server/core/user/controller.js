@@ -2,6 +2,8 @@ const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const blockchainController = require('../blockchain/controller');
 const mongodb = require('../storage/mongodb');
+const statusCodes = require('http-status-codes');
+const utils = require('../utils');
 
 const UserController = {};
 
@@ -31,7 +33,7 @@ UserController.register = async function(username, password, role) {
 UserController.login = async function(username, password) {
   const claimedUser = await blockchainController.queryGetUser(username);
   if (sha512(password, claimedUser.salt) !== claimedUser.hashedPassword) {
-    throw 'Invalid password';
+    throw utils.constructError('Password is incorrect', statusCodes.BAD_REQUEST);
   }
   return jwt.sign({ username: claimedUser.$identifier }, 'secret', { expiresIn: '5h' });
 };

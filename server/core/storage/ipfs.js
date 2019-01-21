@@ -4,6 +4,8 @@ const services = require('../service-discovery/controller');
 const shell = require('../shell/controller');
 // const timeout = require('async').timeout;
 // const r = require('ramda');
+const statusCodes = require('http-status-codes');
+const utils = require('../utils');
 
 // if (!process.env.IPFS_HOST) {
 //   throw new Error('No IPFS host');
@@ -55,7 +57,7 @@ IPFSController.postData = async function(data) {
   const connection = await getConnection();
   const response = await connection.files.add(Buffer.from(JSON.stringify(data)));
   if (response.length !== 1) {
-    throw 'Unexpected IPFS response';
+    throw utils.constructError('Unexpected IPFS response', statusCodes.INTERNAL_SERVER_ERROR);
   }
   const guid = response[0].path;
   return guid;

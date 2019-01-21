@@ -8,7 +8,6 @@ router.post('/register', validator(schemas.register), async(req, res, next) => {
     await userController.register(req.body.username, req.body.password, req.body.role);
     res.end();
   } catch (err) {
-    console.log(err);
     next(err);
   }
 });
@@ -18,7 +17,6 @@ router.post('/login', validator(schemas.login), async(req, res, next) => {
     const token = await userController.login(req.body.username, req.body.password);
     res.json({ token });
   } catch (err) {
-    console.log(err);
     next(err);
   }
 });
