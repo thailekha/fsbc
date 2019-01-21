@@ -136,6 +136,7 @@ discover-ipfs-peers: arp-scan-command
 ipfs-command:
 	$(call install-command,ipfs)
 install-ipfs:
+	rm -rf /tmp/go-ipfs*
 	wget -P /tmp/ https://dist.ipfs.io/go-ipfs/v0.4.17/go-ipfs_v0.4.17_linux-amd64.tar.gz
 	tar xvfz /tmp/go-ipfs_v0.4.17_linux-amd64.tar.gz -C /tmp
 	rm /tmp/go-ipfs_v0.4.17_linux-amd64.tar.gz
