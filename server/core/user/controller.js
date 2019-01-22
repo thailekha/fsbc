@@ -20,6 +20,7 @@ function sha512(password, salt) {
 }
 
 UserController.register = async function(username, password, role) {
+  username = username.toLowerCase();
   const salt = genRandomString(16);
   await blockchainController.registerParticipant(username, role, salt, sha512(password, salt));
   await mongodb.postUser({
@@ -31,6 +32,7 @@ UserController.register = async function(username, password, role) {
 };
 
 UserController.login = async function(username, password) {
+  username = username.toLowerCase();
   const claimedUser = await blockchainController.queryGetUser(username);
   if (sha512(password, claimedUser.salt) !== claimedUser.hashedPassword) {
     throw utils.constructError('Password is incorrect', statusCodes.BAD_REQUEST);
