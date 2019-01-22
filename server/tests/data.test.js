@@ -239,7 +239,7 @@ describe('allTasks', async() => {
       .get(`/v1/fs/${resPut.body.globalUniqueID}`)
       .set('Content-Type', 'application/json')
       .set('Authorization', `Bearer ${resLogin2.body.token}`)
-      .expect(500);
+      .expect(statusCodes.NOT_FOUND);
 
     await request(app)
       .put(`/v1/fs/${resPut.body.globalUniqueID}/grant`)
@@ -326,31 +326,27 @@ describe('getLatest', async() => {
       .send(addRole(user))
       .expect(200);
 
-    const resLogin = await request(app)
+    const {body: {token}} = await request(app)
       .post('/v1/user/login')
       .set('Content-Type', 'application/json')
       .send(user)
       .expect(200);
 
-    const token = resLogin.body.token;
-
-    const resPost = await request(app)
+    const {body: {globalUniqueID}} = await request(app)
       .post('/v1/fs')
       .set('Content-Type', 'application/json')
       .set('Authorization', `Bearer ${token}`)
       .send(initialData)
       .expect(200);
-    assert.ok(resPost.body.globalUniqueID);
-    expect(resPost.body.globalUniqueID).to.have.lengthOf.above(0);
+    expect(globalUniqueID).to.have.lengthOf.above(0);
 
-    const resPut = await request(app)
-      .put(`/v1/fs/${resPost.body.globalUniqueID}`)
+    const {body: {globalUniqueID: nGlobalUniqueID}} = await request(app)
+      .put(`/v1/fs/${globalUniqueID}`)
       .set('Content-Type', 'application/json')
       .set('Authorization', `Bearer ${token}`)
       .send(updatedData)
       .expect(200);
-    assert.ok(resPut.body.globalUniqueID);
-    expect(resPut.body.globalUniqueID).to.have.lengthOf.above(0);
+    expect(nGlobalUniqueID).to.have.lengthOf.above(0);
 
     const resGetAll = await request(app)
       .get(`/v1/fs`)
@@ -360,4 +356,98 @@ describe('getLatest', async() => {
     assert.equal(resGetAll.body.length, 1);
     assert.deepEqual(resGetAll.body[0].data.fruit, updatedData.fruit);
   });
+});
+
+describe('grant, revoke access', async() => {
+  it('should grant, revoke, and show access', async() => {
+    const user1 = generateUser();
+    const user2 = generateUser();
+    const data = {
+      coffee: `mocha-${uniqid()}`
+    };
+
+    await request(app)
+      .post('/v1/user/register')
+      .set('Content-Type', 'application/json')
+      .send(addRole(user1))
+      .expect(200);
+
+    await request(app)
+      .post('/v1/user/register')
+      .set('Content-Type', 'application/json')
+      .send(addRole(user2))
+      .expect(200);
+
+    const {body: {token: token1}} = await request(app)
+      .post('/v1/user/login')
+      .set('Content-Type', 'application/json')
+      .send(user1)
+      .expect(200);
+
+    const {body: {token: token2}} = await request(app)
+      .post('/v1/user/login')
+      .set('Content-Type', 'application/json')
+      .send(user2)
+      .expect(200);
+
+    const {body: {globalUniqueID}} = await request(app)
+      .post('/v1/fs')
+      .set('Content-Type', 'application/json')
+      .set('Authorization', `Bearer ${token1}`)
+      .send(data)
+      .expect(200);
+
+    await request(app)
+      .get(`/v1/fs/${globalUniqueID}`)
+      .set('Content-Type', 'application/json')
+      .set('Authorization', `Bearer ${token2}`)
+      .expect(statusCodes.NOT_FOUND);
+
+    await request(app)
+      .put(`/v1/fs/${globalUniqueID}/grant`)
+      .set('Content-Type', 'application/json')
+      .set('Authorization', `Bearer ${token1}`)
+      .send({grantedUsers: [user2.username]})
+      .expect(200);
+
+    const {body: {coffee: resData}} = await request(app)
+      .get(`/v1/fs/${globalUniqueID}`)
+      .set('Content-Type', 'application/json')
+      .set('Authorization', `Bearer ${token2}`)
+      .expect(200);
+    assert.deepEqual(resData, data.coffee);
+
+    const {body: {grantedUsers}} = await request(app)
+      .get(`/v1/fs/${globalUniqueID}/access`)
+      .set('Content-Type', 'application/json')
+      .set('Authorization', `Bearer ${token1}`)
+      .expect(200);
+    assert.deepEqual(grantedUsers, [user2.username]);
+
+    await request(app)
+      .put(`/v1/fs/${globalUniqueID}/revoke`)
+      .set('Content-Type', 'application/json')
+      .set('Authorization', `Bearer ${token1}`)
+      .send({userToBeRevoked: user2.username})
+      .expect(200);
+
+    await request(app)
+      .get(`/v1/fs/${globalUniqueID}`)
+      .set('Content-Type', 'application/json')
+      .set('Authorization', `Bearer ${token2}`)
+      .expect(statusCodes.NOT_FOUND);
+
+    const {body: {grantedUsers: emptyGrantedUsers}} = await request(app)
+      .get(`/v1/fs/${globalUniqueID}/access`)
+      .set('Content-Type', 'application/json')
+      .set('Authorization', `Bearer ${token1}`)
+      .expect(200);
+    expect(emptyGrantedUsers).to.have.lengthOf(0);
+  });
+
+  // it('should not grant access to unexisting data', async() => {});
+  // it('should not revoke access of unexisting data', async() => {});
+  // it('should not revoke access that has not been granted', async() => {});
+  // it('should not let owner revoke access of the owner', async() => {});
+  // it('should not let other users revoke access of the owner', async() => {});
 });

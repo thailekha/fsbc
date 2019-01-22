@@ -151,6 +151,7 @@ config-ipfs-private:
 	ipfs bootstrap rm --all
 ipfs-daemon:
 	$(IPFS_DAEMON)
+# maybe kill other ports as well
 kill-ipfs:
 	sudo kill $(shell lsof -n -i :4001 | grep LISTEN | awk '{print $$2}' | uniq)
 # ===================
