@@ -104,16 +104,14 @@ FilesystemController.trace = async function(guid, username) {
 };
 
 FilesystemController.grantAccess = async function(guid, username, grantedUsers) {
-  await blockchainController.grantAccess(guid, username, grantedUsers);
-  const blockchainRecord = await blockchainController.getData(guid, username);
+  const blockchainRecord = await blockchainController.grantAccess(guid, username, grantedUsers);
   await mongodb.putDataAsset(guid, {
     authorizedUsers: blockchainRecord.authorizedUsers,
   });
 };
 
 FilesystemController.revokeAccess = async function(guid, username, userToBeRevoked) {
-  await blockchainController.revokeAccess(guid, username, userToBeRevoked);
-  const blockchainRecord = await blockchainController.getData(guid, username);
+  const blockchainRecord = await blockchainController.revokeAccess(guid, username, userToBeRevoked);
   await mongodb.putDataAsset(guid, {
     authorizedUsers: blockchainRecord.authorizedUsers,
   });

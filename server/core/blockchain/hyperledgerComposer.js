@@ -230,61 +230,39 @@ ComposerController.grantAccess = async function(guid, username, grantedUsers) {
     dataAsset.authorizedUsers = dataAsset.authorizedUsers.concat(validAuthorizedUsers);
     await (await client.getAssetRegistry('org.dfs.Data')).update(dataAsset);
   }
+
+  return dataAsset;
 };
 
 ComposerController.revokeAccess = async function(guid, username, userToBeRevoked) {
-  console.log(userToBeRevoked);
-  const businessNetworkDefinition = await clientConnection.connect('admin@dfs');
-  const requestedData = await clientConnection.query('getData', {
+  await getConnection();
+  const requestedData = await client.query('getData', {
     guid,
     username: `resource:org.dfs.User#${username}`,
   });
   if (requestedData.length !== 1) {
-    throw `Cannot find data ${guid} or unauthorized user`;
+    throw utils.constructError(`Cannot find data ${guid} or unauthorized user`, statusCodes.NOT_FOUND);
   }
   const dataAsset = requestedData[0];
-
-  const participants = await clientConnection.getParticipantRegistry('org.dfs.User');
-
-  const exist = await participants.exists(userToBeRevoked);
-  if (exist)  {
-    newGroupOfAuthorizedUsers = dataAsset.authorizedUsers;
-    const len = newGroupOfAuthorizedUsers.length;
-    for (i=0; i<len; i++) {
-      if (newGroupOfAuthorizedUsers[i].$identifier == userToBeRevoked){
-        newGroupOfAuthorizedUsers.splice(i,1);
-        break;
-      }
-    }
+  const participants = await client.getParticipantRegistry('org.dfs.User');
+  if (!(await participants.exists(userToBeRevoked)))  {
+    throw utils.constructError(`${userToBeRevoked} does not exist`, statusCodes.BAD_REQUEST);
   }
-  dataAsset.authorizedUsers = newGroupOfAuthorizedUsers;
-  await (await clientConnection.getAssetRegistry('org.dfs.Data')).update(dataAsset);
-
-  await clientConnection.disconnect();
+  dataAsset.authorizedUsers = dataAsset.authorizedUsers.filter(user => user.$identifier !== userToBeRevoked);
+  await (await client.getAssetRegistry('org.dfs.Data')).update(dataAsset);
+  return dataAsset;
 };
 
 ComposerController.getAccessInfo = async function(guid, username) {
-  const businessNetworkDefinition = await clientConnection.connect('admin@dfs');
-  const requestedData = await clientConnection.query('getData', {
+  await getConnection();
+  const requestedData = await client.query('getData', {
     guid,
     username: `resource:org.dfs.User#${username}`,
   });
   if (requestedData.length !== 1) {
-    throw `Cannot find data ${guid} or unauthorized user`;
+    throw utils.constructError(`Cannot find data ${guid} or unauthorized user`, statusCodes.NOT_FOUND);
   }
-  const dataAsset = requestedData[0];
-
-  const whoHasAccess = []
-  authorized = dataAsset.authorizedUsers;
-  const len = authorized.length;
-  for (i=0; i<len; i++) {
-    whoHasAccess.push(authorized[i].$identifier);
-  }
-  await clientConnection.disconnect();
-  console.log(whoHasAccess);
-  return whoHasAccess;
+  return requestedData[0].authorizedUsers.map(user => user.$identifier);
 };
-
-
 
 module.exports = ComposerController;
