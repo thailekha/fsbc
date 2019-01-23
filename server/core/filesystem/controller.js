@@ -1,8 +1,33 @@
 const blockchainController = require('../blockchain/controller');
 const storageController = require('../storage/controller');
 const mongodb = require('../storage/mongodb');
+const crypto = require('crypto');
 
 const FilesystemController = {};
+
+const ALGORITHM = 'aes-128-cbc';
+const PASSWORD = 'please-change-this-lol';
+
+const needJsonStringify = data => !(data instanceof Buffer) && (data instanceof Object);
+
+function encrypt(data) {
+  const cipher = crypto.createCipher(ALGORITHM,PASSWORD);
+  const crypted = cipher.update(needJsonStringify(data) ? JSON.stringify(data) : data,'utf8','hex') + cipher.final('hex');
+  return crypted;
+}
+
+function decrypt(encrypted) {
+  const decipher = crypto.createDecipher(ALGORITHM,PASSWORD);
+  const decrypted = decipher.update(encrypted,'hex','utf8') + decipher.final('utf8');
+  try {
+    return JSON.parse(decrypted);
+  } catch (e) {
+    if (!(e instanceof SyntaxError)) {
+      throw e;
+    }
+  }
+  return decrypted;
+}
 
 FilesystemController.getAllData = async function(username) {
   const blockchainRecords = await blockchainController.getAllData(username);
@@ -17,7 +42,7 @@ FilesystemController.getAllData = async function(username) {
   // console.log(allLatestDataAssets.map(d => d.lastChangedAt));
   const allLatestData = [];
   for (const guid of allLatestDataAssets.map(d => d.$identifier)) {
-    const data = await storageController.getData(guid);
+    const data = decrypt(await storageController.getData(guid));
     allLatestData.push({ guid, data });
   }
   return allLatestData;
@@ -26,7 +51,7 @@ FilesystemController.getAllData = async function(username) {
 FilesystemController.getData = async function(guid, username) {
   const blockchainRecord = await blockchainController.getData(guid, username);
   await blockchainController.submitGetData(username, blockchainRecord.$identifier);
-  const data = await storageController.getData(blockchainRecord.$identifier);
+  const data = decrypt(await storageController.getData(blockchainRecord.$identifier));
   return data;
 };
 
@@ -40,19 +65,20 @@ FilesystemController.getLatestData = async function(guid, username) {
     latestGlobalUniqueID = guid;
   }
 
-  const data = await storageController.getData(latestGlobalUniqueID);
+  const data = decrypt(await storageController.getData(latestGlobalUniqueID));
   // await blockchainController.submitGetData(username, guid);
   return { guid: latestGlobalUniqueID, data };
 };
 
 FilesystemController.postData = async function(username, data) {
   data._dateAdded = new Date();
-  const guid = await storageController.postData(data);
+  const encryptedData = encrypt(data);
+  const guid = await storageController.postData(encryptedData);
   const dataAsset = await blockchainController.postData(guid, username);
   await blockchainController.submitPostData(username, guid);
   await mongodb.postData({
     guid: guid,
-    data: JSON.stringify(data)
+    data: encryptedData
   });
   await mongodb.postDataAsset({
     guid: guid,
@@ -70,12 +96,13 @@ FilesystemController.postData = async function(username, data) {
 
 FilesystemController.putData = async function(guid, username, data) {
   const blockchainRecord = await blockchainController.getData(guid, username);
-  const newGuid = await storageController.postData(data);
+  const encryptedData = encrypt(data);
+  const newGuid = await storageController.postData(encryptedData);
   const newBlockchainRecord = await blockchainController.putData(blockchainRecord, newGuid, username);
   await blockchainController.submitPutData(username, blockchainRecord, newBlockchainRecord);
   await mongodb.postData({
     guid: newGuid,
-    data: JSON.stringify(data)
+    data: encryptedData
   });
   await mongodb.postDataAsset({
     guid: newGuid,
@@ -95,7 +122,7 @@ FilesystemController.trace = async function(guid, username) {
   const allVersionRecords = await blockchainController.traceData(guid, username);
   const allVersions = [];
   for (const record of allVersionRecords) {
-    const data = await storageController.getData(record.id);
+    const data = decrypt(await storageController.getData(record.id));
     data.lastChangedAt = record.lastChangedAt;
     data.lastChangedBy = record.lastChangedBy;
     allVersions.push(data);
