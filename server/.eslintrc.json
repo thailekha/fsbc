@@ -30,7 +30,7 @@
         "unix"
       ],
       "no-array-constructor": "error",
-      "no-console": "off",
+      "no-console": "warn",
       "no-lonely-if": "warn",
       "no-loop-func": "warn",
       "no-mixed-spaces-and-tabs": [

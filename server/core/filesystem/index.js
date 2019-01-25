@@ -7,7 +7,6 @@ router.get('/', async(req, res, next) => {
   try {
     res.json(await fsController.getAllData(req.username));
   } catch (err) {
-    console.log(err);
     next(err);
   }
 });
@@ -16,7 +15,6 @@ router.get('/:id', async(req, res, next) => {
   try {
     res.json(await fsController.getData(req.params.id, req.username));
   } catch (err) {
-    console.log(err);
     next(err);
   }
 });
@@ -25,7 +23,6 @@ router.get('/:id/latest', async(req, res, next) => {
   try {
     res.json(await fsController.getLatestData(req.params.id, req.username));
   } catch (err) {
-    console.log(err);
     next(err);
   }
 });
@@ -34,7 +31,6 @@ router.post('/', validator(schemas.postData), async(req, res, next) => {
   try {
     res.json(await fsController.postData(req.username, req.body));
   } catch (err) {
-    console.log(err);
     next(err);
   }
 });
@@ -45,7 +41,6 @@ router.put('/:id', validator(schemas.putData), async(req, res, next) => {
   try {
     res.json(await fsController.putData(req.params.id, req.username, req.body));
   } catch (err) {
-    console.log(err);
     next(err);
   }
 });
@@ -54,7 +49,6 @@ router.get('/:id/trace', async(req, res, next) => {
   try {
     res.json(await fsController.trace(req.params.id, req.username));
   } catch (err) {
-    console.log(err);
     next(err);
   }
 });
@@ -66,7 +60,6 @@ router.put('/:id/grant', validator(schemas.grantAccess), async(req, res, next) =
     await fsController.grantAccess(req.params.id, req.username, req.body.grantedUsers);
     res.end();
   } catch (err) {
-    console.log(err);
     next(err);
   }
 });
@@ -76,7 +69,6 @@ router.put('/:id/revoke', validator(schemas.revokeAccess), async(req, res, next)
     await fsController.revokeAccess(req.params.id, req.username, req.body.userToBeRevoked);
     res.end();
   } catch (err) {
-    console.log(err);
     next(err);
   }
 });
@@ -85,7 +77,6 @@ router.get('/:id/access', async(req, res, next) => {
   try {
     res.json(await fsController.getAccessInfo(req.params.id, req.username));
   } catch (err) {
-    console.log(err);
     next(err);
   }
 });
