@@ -44,7 +44,8 @@ async function validator(ipAddress) {
 IPFSController.validator = validator;
 
 async function getConnection() {
-  return IPFSConnection(await services.getService(validator));
+  // return IPFSConnection(await services.getService(validator));
+  return IPFSConnection('0.0.0.0');
 }
 
 IPFSController.getData = async function(id) {
