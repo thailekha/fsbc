@@ -28,3 +28,23 @@ vagrant up dev-machine
 vagrant ssh dev-machine
     cd /mnt/vagrant && make singlenode
 ```
+
+# Deploy
+## First deployment
+```
+# store the key
+make gen-ipfs-swarm-key
+```
+## Subsequent deployments
+```
+# download .env file from google drive
+# copy swarm.key
+# select network adapter
+make list-bridge-adapters
+make deploy
+vagrant ssh dev-machine
+    ipfs daemon
+vagrant ssh dev-machine
+    ~/fsbc/ngrok authtoken <insert ngrok token here>
+    cd /mnt/vagrant/ && make run-ngrok
+```
