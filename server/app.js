@@ -5,6 +5,11 @@ const logger = require('morgan');
 const cors = require('cors');
 const fileUpload = require('express-fileupload');
 
+const env = require('dotenv').config();
+if (env.error) {
+  throw env.error;
+}
+
 const jwtAuthenticate = require('./middlewares/jwt-authenticate');
 const userRouter = require('./core/user');
 const fsRouter = require('./core/filesystem');

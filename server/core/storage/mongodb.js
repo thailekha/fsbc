@@ -102,7 +102,7 @@ MongoDBController.postData = async function(data) {
 //   console.log(response);
 // }
 
-if (process.env.NULL_DB) {
+if (process.env.NULL_DB === "1") {
   MongoDBController.postUser = () => {};
   MongoDBController.postDataAsset = () => {};
   MongoDBController.putDataAsset = () => {};

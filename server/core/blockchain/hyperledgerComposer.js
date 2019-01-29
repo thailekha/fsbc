@@ -223,6 +223,8 @@ ComposerController.grantAccess = async function(guid, username, grantedUsers) {
     const exist = await participants.exists(username);
     if (exist) {
       validAuthorizedUsers.push(businessNetworkDefinition.getFactory().newRelationship('org.dfs', 'User', username));
+    } else {
+      utils.logger.warn(`<GRANT-ACCESS> ${username} does not exist`);
     }
   }
 
@@ -231,7 +233,7 @@ ComposerController.grantAccess = async function(guid, username, grantedUsers) {
     await (await client.getAssetRegistry('org.dfs.Data')).update(dataAsset);
   }
 
-  return dataAsset;
+  return { blockchainRecord: dataAsset, newGrantedUsers: validAuthorizedUsers.map(u => u.$identifier) };
 };
 
 ComposerController.revokeAccess = async function(guid, username, userToBeRevoked) {

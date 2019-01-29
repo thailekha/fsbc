@@ -5,8 +5,12 @@ const crypto = require('crypto');
 
 const FilesystemController = {};
 
-const ALGORITHM = 'aes-128-cbc';
-const PASSWORD = 'please-change-this-lol';
+if (!process.env.DATAENCRYPT_SECRET) {
+  throw new Error('DATAENCRYPT_SECRET not set');
+}
+
+const ALGORITHM = 'aes-256-cbc';
+const PASSWORD = process.env.DATAENCRYPT_SECRET;
 
 const needJsonStringify = data => !(data instanceof Buffer) && (data instanceof Object);
 
@@ -131,13 +135,16 @@ FilesystemController.trace = async function(guid, username) {
 };
 
 FilesystemController.grantAccess = async function(guid, username, grantedUsers) {
-  const blockchainRecord = await blockchainController.grantAccess(guid, username, grantedUsers);
+  grantedUsers = grantedUsers.map(u => u.toLowerCase());
+  const { blockchainRecord, newGrantedUsers } = await blockchainController.grantAccess(guid, username, grantedUsers);
   await mongodb.putDataAsset(guid, {
     authorizedUsers: blockchainRecord.authorizedUsers,
   });
+  return { newGrantedUsers };
 };
 
 FilesystemController.revokeAccess = async function(guid, username, userToBeRevoked) {
+  userToBeRevoked = userToBeRevoked.toLowerCase();
   const blockchainRecord = await blockchainController.revokeAccess(guid, username, userToBeRevoked);
   await mongodb.putDataAsset(guid, {
     authorizedUsers: blockchainRecord.authorizedUsers,

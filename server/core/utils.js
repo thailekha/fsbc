@@ -1,4 +1,5 @@
 const Utils = {};
+const chalk = require('chalk');
 
 Utils.constructError = function(msg, code) {
   const err = new Error(msg);
@@ -27,6 +28,10 @@ Utils.formatError = function(err, clue, msg, code, defaultMsg) {
     err.code = code;
   }
   return err;
+}
+
+Utils.logger = {
+  warn: msg => console.log(chalk.bgYellow(`[FSBC-LOGGER] ${msg}`))
 }
 
 module.exports = Utils;

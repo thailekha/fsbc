@@ -57,8 +57,7 @@ router.get('/:id/trace', async(req, res, next) => {
 
 router.put('/:id/grant', validator(schemas.grantAccess), async(req, res, next) => {
   try {
-    await fsController.grantAccess(req.params.id, req.username, req.body.grantedUsers);
-    res.end();
+    res.json(await fsController.grantAccess(req.params.id, req.username, req.body.grantedUsers));
   } catch (err) {
     next(err);
   }

@@ -1,6 +1,8 @@
 const statusCodes = require('http-status-codes');
+const chalk = require('chalk');
 
 module.exports = (err, req, res, next) => {
+  console.error(chalk.bgRedBright(`[FSBC-LOGGER] From ${req.ip} - ${req.originalUrl} - error: ${err.message}`));
   if (err instanceof Error) {
     var error = {};
 

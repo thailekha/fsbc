@@ -26,12 +26,11 @@ vagrant halt server-machine$1
 RAM=256 vagrant up server-machine$1
 vagrant ssh server-machine$1 -- -t 'cd /mnt/vagrant/server && npm run production'
 endef
-deploy: singlenode-env
-	vagrant ssh dev-machine -- -t '$(INIT_NVM) && cd /mnt/vagrant/server && npm run nodb-production'
-singlenode-env:
+deploy:
 	vagrant destroy -f dev-machine
 	vagrant up dev-machine
 	vagrant ssh dev-machine -- -t '$(INIT_NVM) && cd /mnt/vagrant && make singlenode'
+	vagrant ssh dev-machine -- -t '$(INIT_NVM) && npm i -g forever'
 singlenode: make-production-directories jq-command install-ngrok yarn-command ipfs-command start-composer sleep-3 init-business-network config-ipfs
 	cd server && npm run yarn-install
 # ===================
@@ -242,6 +241,8 @@ gen-ipfs-swarm-key: go-command
 	$(HOME)/gopath/bin/ipfs-swarm-key-gen > ./swarm.key
 run-ngrok:
 	~/fsbc/ngrok http 9000 --subdomain=fsbccoffee --log=/home/vagrant/fsbc/log/ngrok.out
+run-ngrok-test:
+	~/fsbc/ngrok http 9000 --subdomain=fsbccoffee-test
 ssh-to-physical-server-from-mac:
 	ssh -o PubkeyAuthentication=no dev@hostname.com
 list-bridge-adapters:
