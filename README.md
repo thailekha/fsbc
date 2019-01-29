@@ -33,7 +33,6 @@ vagrant ssh dev-machine
 - Clone this repo
 - Create a .env file and add the following values:
 ```
-NULL_DB=1
 ATLAS_CREDS=
 DATAENCRYPT_SECRET=
 ```
@@ -43,7 +42,8 @@ make deploy
 vagrant ssh dev-machine
     ipfs daemon
 vagrant ssh dev-machine
-    cd /mnt/vagrant/server && npm run production
+    cd /mnt/vagrant/server && npm run production && npm run backup-worker
+    cd ~/fsbc/log && tail -f *
 vagrant ssh dev-machine
     ~/fsbc/ngrok authtoken <insert ngrok token here>
     cd /mnt/vagrant/ && make run-ngrok

@@ -25,3 +25,15 @@ query getUser {
     SELECT org.dfs.User
     WHERE (username == _$username)
 }
+
+query getDataForBackup {
+  description: "Get Data assets"
+  statement:
+    SELECT org.dfs.Data
+}
+
+query getUserForBackup {
+  description: "Get all Users"
+  statement:
+    SELECT org.dfs.User
+}

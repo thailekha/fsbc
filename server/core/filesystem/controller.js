@@ -1,6 +1,6 @@
 const blockchainController = require('../blockchain/controller');
 const storageController = require('../storage/controller');
-const mongodb = require('../storage/mongodb');
+// const mongodb = require('../storage/mongodb');
 const crypto = require('crypto');
 
 const FilesystemController = {};
@@ -80,21 +80,21 @@ FilesystemController.postData = async function(username, data) {
   const guid = await storageController.postData(encryptedData);
   const dataAsset = await blockchainController.postData(guid, username);
   await blockchainController.submitPostData(username, guid);
-  await mongodb.postData({
-    guid: guid,
-    data: encryptedData
-  });
-  await mongodb.postDataAsset({
-    guid: guid,
-    originalName: dataAsset.originalName,
-    mimetype: dataAsset.mimetype,
-    lastChangedAt: dataAsset.lastChangedAt,
-    active: 1,
-    owner: dataAsset.owner,
-    lastChangedBy: dataAsset.lastChangedBy,
-    authorizedUsers: dataAsset.authorizedUsers,
-    lastVersion: ''
-  });
+  // await mongodb.postData({
+  //   guid: guid,
+  //   data: encryptedData
+  // });
+  // await mongodb.postDataAsset({
+  //   guid: guid,
+  //   originalName: dataAsset.originalName,
+  //   mimetype: dataAsset.mimetype,
+  //   lastChangedAt: dataAsset.lastChangedAt,
+  //   active: 1,
+  //   owner: dataAsset.owner,
+  //   lastChangedBy: dataAsset.lastChangedBy,
+  //   authorizedUsers: dataAsset.authorizedUsers,
+  //   lastVersion: ''
+  // });
   return { globalUniqueID: guid};
 };
 
@@ -104,21 +104,21 @@ FilesystemController.putData = async function(guid, username, data) {
   const newGuid = await storageController.postData(encryptedData);
   const newBlockchainRecord = await blockchainController.putData(blockchainRecord, newGuid, username);
   await blockchainController.submitPutData(username, blockchainRecord, newBlockchainRecord);
-  await mongodb.postData({
-    guid: newGuid,
-    data: encryptedData
-  });
-  await mongodb.postDataAsset({
-    guid: newGuid,
-    originalName: newBlockchainRecord.originalName,
-    mimetype: newBlockchainRecord.mimetype,
-    lastChangedAt: newBlockchainRecord.lastChangedAt,
-    active: 1,
-    owner: newBlockchainRecord.owner,
-    lastChangedBy: newBlockchainRecord.lastChangedBy,
-    authorizedUsers: newBlockchainRecord.authorizedUsers,
-    lastVersion: newBlockchainRecord.lastVersion
-  });
+  // await mongodb.postData({
+  //   guid: newGuid,
+  //   data: encryptedData
+  // });
+  // await mongodb.postDataAsset({
+  //   guid: newGuid,
+  //   originalName: newBlockchainRecord.originalName,
+  //   mimetype: newBlockchainRecord.mimetype,
+  //   lastChangedAt: newBlockchainRecord.lastChangedAt,
+  //   active: 1,
+  //   owner: newBlockchainRecord.owner,
+  //   lastChangedBy: newBlockchainRecord.lastChangedBy,
+  //   authorizedUsers: newBlockchainRecord.authorizedUsers,
+  //   lastVersion: newBlockchainRecord.lastVersion
+  // });
   return { globalUniqueID: newGuid};
 };
 
@@ -137,18 +137,18 @@ FilesystemController.trace = async function(guid, username) {
 FilesystemController.grantAccess = async function(guid, username, grantedUsers) {
   grantedUsers = grantedUsers.map(u => u.toLowerCase());
   const { blockchainRecord, newGrantedUsers } = await blockchainController.grantAccess(guid, username, grantedUsers);
-  await mongodb.putDataAsset(guid, {
-    authorizedUsers: blockchainRecord.authorizedUsers,
-  });
+  // await mongodb.putDataAsset(guid, {
+  //   authorizedUsers: blockchainRecord.authorizedUsers,
+  // });
   return { newGrantedUsers };
 };
 
 FilesystemController.revokeAccess = async function(guid, username, userToBeRevoked) {
   userToBeRevoked = userToBeRevoked.toLowerCase();
   const blockchainRecord = await blockchainController.revokeAccess(guid, username, userToBeRevoked);
-  await mongodb.putDataAsset(guid, {
-    authorizedUsers: blockchainRecord.authorizedUsers,
-  });
+  // await mongodb.putDataAsset(guid, {
+  //   authorizedUsers: blockchainRecord.authorizedUsers,
+  // });
 };
 
 FilesystemController.getAccessInfo = async function(guid, username) {

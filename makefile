@@ -249,3 +249,5 @@ list-bridge-adapters:
 	VBoxManage list bridgedifs | grep Name | grep -v VBoxNetworkName
 make-production-directories:
 	mkdir -p ~/fsbc/log
+stop-all-forever:
+	forever stopall

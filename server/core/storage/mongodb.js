@@ -1,7 +1,13 @@
 const mongoose = require('mongoose');
-const User = require('./mongodbSchemas/User');
-const DataAsset = require('./mongodbSchemas/DataAsset');
-const Data = require('./mongodbSchemas/Data');
+const User = require('./mongodbSchemas/user');
+const DataAsset = require('./mongodbSchemas/dataAsset');
+const Data = require('./mongodbSchemas/data');
+
+// if (!process.env.BACKUP_PATH) {
+//   throw new Error('BACKUP_PATH not set');
+// }
+
+// const BACKUP_QUEUE_PATH = process.env.BACKUP_PATH;
 
 let isConnected;
 
@@ -12,14 +18,19 @@ async function connectToDatabase() {
     return;
   }
 
-  const db = await mongoose.connect(`mongodb+srv://${process.env.ATLAS_CREDS}@coffeeproject-5irgt.mongodb.net/test?retryWrites=true`);
+  const db = await mongoose.connect(`mongodb+srv://${process.env.ATLAS_CREDS}@coffeeproject-5irgt.mongodb.net/test?retryWrites=true`, { useNewUrlParser: true });
   isConnected = db.connections[0].readyState;
 }
 
 MongoDBController.postUser = async function(data) {
   await connectToDatabase();
-  const response = await User.create(data);
-  return response._id;
+  await User.create(data);
+};
+
+MongoDBController.addOrUpdateParticipant = async function(data) {
+  await connectToDatabase();
+  const {username} = data;
+  await User.findOneAndUpdate({username}, data, {upsert: true});
 };
 
 // MongoDBController.getUser = async function(id) {
@@ -29,8 +40,13 @@ MongoDBController.postUser = async function(data) {
 
 MongoDBController.postDataAsset = async function(data) {
   await connectToDatabase();
-  const response = await DataAsset.create(data);
-  return response._id;
+  await DataAsset.create(data);
+};
+
+MongoDBController.addOrUpdateDataAsset = async function(data) {
+  await connectToDatabase();
+  const {guid} = data;
+  await DataAsset.findOneAndUpdate({guid}, data, {upsert: true});
 };
 
 // MongoDBController.getDataAsset = async function(id) {
@@ -45,8 +61,7 @@ MongoDBController.putDataAsset = async function(id, data) {
 
 MongoDBController.postData = async function(data) {
   await connectToDatabase();
-  const response = await Data.create(data);
-  return response._id;
+  await Data.create(data);
 };
 
 // MongoDBController.getData = async function(id) {
@@ -101,12 +116,5 @@ MongoDBController.postData = async function(data) {
 //   });
 //   console.log(response);
 // }
-
-if (process.env.NULL_DB === "1") {
-  MongoDBController.postUser = () => {};
-  MongoDBController.postDataAsset = () => {};
-  MongoDBController.putDataAsset = () => {};
-  MongoDBController.postData = () => {};
-}
 
 module.exports = MongoDBController;

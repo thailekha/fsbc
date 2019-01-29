@@ -150,117 +150,117 @@ describe('get data', async() => {
   });
 });
 
-describe('allTasks', async() => {
-  it('should register, login, post, get, put, get, trace, get-latest, grant', async() => {
-    const user1 = generateUser();
-    const user2 = generateUser();
-    const data1 = {
-      coffee: `mocha-${uniqid()}`
-    };
-    const data2 = {
-      coffee: `latte-${uniqid()}`
-    };
+// describe('allTasks', async() => {
+//   it('should register, login, post, get, put, get, trace, get-latest, grant', async() => {
+//     const user1 = generateUser();
+//     const user2 = generateUser();
+//     const data1 = {
+//       coffee: `mocha-${uniqid()}`
+//     };
+//     const data2 = {
+//       coffee: `latte-${uniqid()}`
+//     };
 
-    await request(app)
-      .post('/v1/user/register')
-      .set('Content-Type', 'application/json')
-      .send(addRole(user1))
-      .expect(200);
+//     await request(app)
+//       .post('/v1/user/register')
+//       .set('Content-Type', 'application/json')
+//       .send(addRole(user1))
+//       .expect(200);
 
-    const resLogin1 = await request(app)
-      .post('/v1/user/login')
-      .set('Content-Type', 'application/json')
-      .send(user1)
-      .expect(200);
+//     const resLogin1 = await request(app)
+//       .post('/v1/user/login')
+//       .set('Content-Type', 'application/json')
+//       .send(user1)
+//       .expect(200);
 
-    const resPost = await request(app)
-      .post('/v1/fs')
-      .set('Content-Type', 'application/json')
-      .set('Authorization', `Bearer ${resLogin1.body.token}`)
-      .send(data1)
-      .expect(200);
-    assert.ok(resPost.body.globalUniqueID);
-    expect(resPost.body.globalUniqueID).to.have.lengthOf.above(0);
+//     const resPost = await request(app)
+//       .post('/v1/fs')
+//       .set('Content-Type', 'application/json')
+//       .set('Authorization', `Bearer ${resLogin1.body.token}`)
+//       .send(data1)
+//       .expect(200);
+//     assert.ok(resPost.body.globalUniqueID);
+//     expect(resPost.body.globalUniqueID).to.have.lengthOf.above(0);
 
-    const resGet1 = await request(app)
-      .get(`/v1/fs/${resPost.body.globalUniqueID}`)
-      .set('Content-Type', 'application/json')
-      .set('Authorization', `Bearer ${resLogin1.body.token}`)
-      .expect(200);
-    assert.deepEqual(resGet1.body.coffee, data1.coffee);
+//     const resGet1 = await request(app)
+//       .get(`/v1/fs/${resPost.body.globalUniqueID}`)
+//       .set('Content-Type', 'application/json')
+//       .set('Authorization', `Bearer ${resLogin1.body.token}`)
+//       .expect(200);
+//     assert.deepEqual(resGet1.body.coffee, data1.coffee);
 
-    const resPut = await request(app)
-      .put(`/v1/fs/${resPost.body.globalUniqueID}`)
-      .set('Content-Type', 'application/json')
-      .set('Authorization', `Bearer ${resLogin1.body.token}`)
-      .send(data2)
-      .expect(200);
-    assert.ok(resPut.body.globalUniqueID);
-    expect(resPut.body.globalUniqueID).to.have.lengthOf.above(0);
+//     const resPut = await request(app)
+//       .put(`/v1/fs/${resPost.body.globalUniqueID}`)
+//       .set('Content-Type', 'application/json')
+//       .set('Authorization', `Bearer ${resLogin1.body.token}`)
+//       .send(data2)
+//       .expect(200);
+//     assert.ok(resPut.body.globalUniqueID);
+//     expect(resPut.body.globalUniqueID).to.have.lengthOf.above(0);
 
-    const resGet2 = await request(app)
-      .get(`/v1/fs/${resPut.body.globalUniqueID}`)
-      .set('Content-Type', 'application/json')
-      .set('Authorization', `Bearer ${resLogin1.body.token}`)
-      .expect(200);
-    assert.deepEqual(resGet2.body, data2);
+//     const resGet2 = await request(app)
+//       .get(`/v1/fs/${resPut.body.globalUniqueID}`)
+//       .set('Content-Type', 'application/json')
+//       .set('Authorization', `Bearer ${resLogin1.body.token}`)
+//       .expect(200);
+//     assert.deepEqual(resGet2.body, data2);
 
-    const resTrace = await request(app)
-      .get(`/v1/fs/${resPut.body.globalUniqueID}/trace`)
-      .set('Content-Type', 'application/json')
-      .set('Authorization', `Bearer ${resLogin1.body.token}`)
-      .expect(200);
-    assert.ok(resTrace.body[0].coffee);
-    assert.ok(resTrace.body[1].coffee);
-    assert.equal(resTrace.body[0].coffee, data2.coffee);
-    assert.equal(resTrace.body[1].coffee, data1.coffee);
+//     const resTrace = await request(app)
+//       .get(`/v1/fs/${resPut.body.globalUniqueID}/trace`)
+//       .set('Content-Type', 'application/json')
+//       .set('Authorization', `Bearer ${resLogin1.body.token}`)
+//       .expect(200);
+//     assert.ok(resTrace.body[0].coffee);
+//     assert.ok(resTrace.body[1].coffee);
+//     assert.equal(resTrace.body[0].coffee, data2.coffee);
+//     assert.equal(resTrace.body[1].coffee, data1.coffee);
 
-    const resGetLatest = await request(app)
-      .get(`/v1/fs/${resPost.body.globalUniqueID}/latest`)
-      .set('Content-Type', 'application/json')
-      .set('Authorization', `Bearer ${resLogin1.body.token}`)
-      .expect(200);
-    assert.equal(resPut.body.globalUniqueID, resGetLatest.body.guid);
-    assert.deepEqual(resGetLatest.body.data, data2);
+//     const resGetLatest = await request(app)
+//       .get(`/v1/fs/${resPost.body.globalUniqueID}/latest`)
+//       .set('Content-Type', 'application/json')
+//       .set('Authorization', `Bearer ${resLogin1.body.token}`)
+//       .expect(200);
+//     assert.equal(resPut.body.globalUniqueID, resGetLatest.body.guid);
+//     assert.deepEqual(resGetLatest.body.data, data2);
 
-    await request(app)
-      .post('/v1/user/register')
-      .set('Content-Type', 'application/json')
-      .send(addRole(user2))
-      .expect(200);
+//     await request(app)
+//       .post('/v1/user/register')
+//       .set('Content-Type', 'application/json')
+//       .send(addRole(user2))
+//       .expect(200);
 
-    const resLogin2 = await request(app)
-      .post('/v1/user/login')
-      .set('Content-Type', 'application/json')
-      .send(user2)
-      .expect(200);
+//     const resLogin2 = await request(app)
+//       .post('/v1/user/login')
+//       .set('Content-Type', 'application/json')
+//       .send(user2)
+//       .expect(200);
 
-    await request(app)
-      .get(`/v1/fs/${resPut.body.globalUniqueID}`)
-      .set('Content-Type', 'application/json')
-      .set('Authorization', `Bearer ${resLogin2.body.token}`)
-      .expect(statusCodes.NOT_FOUND);
+//     await request(app)
+//       .get(`/v1/fs/${resPut.body.globalUniqueID}`)
+//       .set('Content-Type', 'application/json')
+//       .set('Authorization', `Bearer ${resLogin2.body.token}`)
+//       .expect(statusCodes.NOT_FOUND);
 
-    await request(app)
-      .put(`/v1/fs/${resPut.body.globalUniqueID}/grant`)
-      .set('Content-Type', 'application/json')
-      .set('Authorization', `Bearer ${resLogin1.body.token}`)
-      .send({grantedUsers: [user2.username]})
-      .expect(200);
+//     await request(app)
+//       .put(`/v1/fs/${resPut.body.globalUniqueID}/grant`)
+//       .set('Content-Type', 'application/json')
+//       .set('Authorization', `Bearer ${resLogin1.body.token}`)
+//       .send({grantedUsers: [user2.username]})
+//       .expect(200);
 
-    console.log(resPut.body.globalUniqueID, resLogin2.body.token);
+//     console.log(resPut.body.globalUniqueID, resLogin2.body.token);
 
-    const resGetAuthorized = await request(app)
-      .get(`/v1/fs/${resPut.body.globalUniqueID}`)
-      .set('Content-Type', 'application/json')
-      .set('Authorization', `Bearer ${resLogin2.body.token}`)
-      .expect(200);
-    assert.deepEqual(resGetAuthorized.body, data2);
-  });
-});
+//     const resGetAuthorized = await request(app)
+//       .get(`/v1/fs/${resPut.body.globalUniqueID}`)
+//       .set('Content-Type', 'application/json')
+//       .set('Authorization', `Bearer ${resLogin2.body.token}`)
+//       .expect(200);
+//     assert.deepEqual(resGetAuthorized.body, data2);
+//   });
+// });
 
 describe('getLatest', async() => {
-  it('should register, login, post 2 data assets, and getAll data', async() => {
+  it('should post 2 data assets, and getAll data', async() => {
     const user1 = generateUser();
 
     const data1 = {
@@ -310,7 +310,7 @@ describe('getLatest', async() => {
     assert.deepEqual(resGetAll.body[1].data.coffee, data1.coffee);
   });
 
-  it('should register, login, post 1 data asset, update it, get all data, only 1 asset should be returned', async() => {
+  it('should post 1 data asset, update it, get all data, only 1 asset should be returned', async() => {
     const user = generateUser();
 
     const initialData = {
@@ -355,6 +355,77 @@ describe('getLatest', async() => {
       .expect(200);
     assert.equal(resGetAll.body.length, 1);
     assert.deepEqual(resGetAll.body[0].data.fruit, updatedData.fruit);
+  });
+
+  it('should post 1 data asset, grant access, other user updates it, both users get all data should only get 1 asset', async() => {
+    const user1 = generateUser();
+    const user2 = generateUser();
+
+    const initialData = {
+      coffee: `mocha-${uniqid()}`
+    };
+    const updatedData = {
+      fruit: `dragonfruit-${uniqid()}`
+    };
+
+    await request(app)
+      .post('/v1/user/register')
+      .set('Content-Type', 'application/json')
+      .send(addRole(user1))
+      .expect(200);
+    await request(app)
+      .post('/v1/user/register')
+      .set('Content-Type', 'application/json')
+      .send(addRole(user2))
+      .expect(200);
+
+    const {body: {token: token1}} = await request(app)
+      .post('/v1/user/login')
+      .set('Content-Type', 'application/json')
+      .send(user1)
+      .expect(200);
+    const {body: {token: token2}} = await request(app)
+      .post('/v1/user/login')
+      .set('Content-Type', 'application/json')
+      .send(user2)
+      .expect(200);
+
+    const {body: {globalUniqueID: guid}} = await request(app)
+      .post('/v1/fs')
+      .set('Content-Type', 'application/json')
+      .set('Authorization', `Bearer ${token1}`)
+      .send(initialData)
+      .expect(200);
+
+    await request(app)
+      .put(`/v1/fs/${guid}/grant`)
+      .set('Content-Type', 'application/json')
+      .set('Authorization', `Bearer ${token1}`)
+      .send({grantedUsers: [user2.username]})
+      .expect(200);
+
+    await request(app)
+      .put(`/v1/fs/${guid}`)
+      .set('Content-Type', 'application/json')
+      .set('Authorization', `Bearer ${token2}`)
+      .send(updatedData)
+      .expect(200);
+
+    const {body: allDataForUser1} = await request(app)
+      .get(`/v1/fs`)
+      .set('Content-Type', 'application/json')
+      .set('Authorization', `Bearer ${token1}`)
+      .expect(200);
+    assert.equal(allDataForUser1.length, 1);
+    assert.deepEqual(allDataForUser1[0].data.fruit, updatedData.fruit);
+
+    const {body: allDataForUser2} = await request(app)
+      .get(`/v1/fs`)
+      .set('Content-Type', 'application/json')
+      .set('Authorization', `Bearer ${token2}`)
+      .expect(200);
+    assert.equal(allDataForUser2.length, 1);
+    assert.deepEqual(allDataForUser2[0].data.fruit, updatedData.fruit);
   });
 });
 
@@ -403,12 +474,13 @@ describe('grant, revoke access', async() => {
       .set('Authorization', `Bearer ${token2}`)
       .expect(statusCodes.NOT_FOUND);
 
-    await request(app)
+    const {body: {newGrantedUsers}} = await request(app)
       .put(`/v1/fs/${globalUniqueID}/grant`)
       .set('Content-Type', 'application/json')
       .set('Authorization', `Bearer ${token1}`)
       .send({grantedUsers: [user2.username]})
       .expect(200);
+    assert.deepEqual(newGrantedUsers[0], user2.username);
 
     const {body: {coffee: resData}} = await request(app)
       .get(`/v1/fs/${globalUniqueID}`)
@@ -451,3 +523,7 @@ describe('grant, revoke access', async() => {
   // it('should not let owner revoke access of the owner', async() => {});
   // it('should not let other users revoke access of the owner', async() => {});
 });
+
+// describe('devtest', async() => {
+//   it('logs', async() => {});
+// });

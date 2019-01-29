@@ -267,4 +267,9 @@ ComposerController.getAccessInfo = async function(guid, username) {
   return requestedData[0].authorizedUsers.map(user => user.$identifier);
 };
 
+ComposerController.getBackup = async function() {
+  await getConnection();
+  return { assets: await client.query('getDataForBackup'), participants: await client.query('getUserForBackup') };
+};
+
 module.exports = ComposerController;

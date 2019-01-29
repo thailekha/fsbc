@@ -31,7 +31,9 @@ Utils.formatError = function(err, clue, msg, code, defaultMsg) {
 }
 
 Utils.logger = {
-  warn: msg => console.log(chalk.bgYellow(`[FSBC-LOGGER] ${msg}`))
+  info: msg => console.log(chalk.bgBlue(`[FSBC-LOGGER] ${msg}`)),
+  warn: msg => console.log(chalk.bgYellow(`[FSBC-LOGGER] ${msg}`)),
+  error: msg => console.log(chalk.bgRed(`[FSBC-LOGGER] ${msg}`))
 }
 
 module.exports = Utils;

@@ -7,14 +7,16 @@
     "yarn-add": "yarn --modules-folder ~/fsbc/node_modules add",
     "yarn-remove": "yarn --modules-folder ~/fsbc/node_modules remove",
     "lint": "~/fsbc/node_modules/.bin/eslint --fix core/**/*.js middlewares/**/*.js tests/**/*.js bin/www",
-    "production": "NODE_PATH=~/fsbc/node_modules forever start -l ~/fsbc/log/forever.log -o ~/fsbc/log/out.log -e ~/fsbc/log/err.log ./bin/www",
+    "production": "NODE_PATH=~/fsbc/node_modules forever start --append -l ~/fsbc/log/forever.log -o ~/fsbc/log/out.log -e ~/fsbc/log/err.log ./bin/www --color",
     "dev": "NODE_PATH=~/fsbc/node_modules ~/fsbc/node_modules/nodemon/bin/nodemon.js --ignore './config' -L ./bin/www",
     "debug-dev": "NODE_PATH=~/fsbc/node_modules node inspect ./bin/www",
     "test": "NODE_PATH=~/fsbc/node_modules node ~/fsbc/node_modules/mocha/bin/mocha --trace-warnings ./tests/data.test.js --timeout 60000 --exit",
     "test-dev": "NODE_PATH=~/fsbc/node_modules node ~/fsbc/node_modules/mocha/bin/mocha ./tests/data.test.js --grep devtest --timeout 60000 --exit",
     "debug-test": "NODE_PATH=~/fsbc/node_modules node ~/fsbc/node_modules/mocha/bin/mocha debug ./tests/data.test.js",
     "debug-test-dev": "NODE_PATH=~/fsbc/node_modules node ~/fsbc/node_modules/mocha/bin/mocha debug ./tests/data.test.js --grep devtest --timeout 60000 --exit",
-    "coverage": "NODE_PATH=~/fsbc/node_modules ./node_modules/.bin/nyc --reporter=text --reporter=lcov ./node_modules/mocha/bin/mocha ./tests/data.test.js --timeout 60000 --exit"
+    "coverage": "NODE_PATH=~/fsbc/node_modules ./node_modules/.bin/nyc --reporter=text --reporter=lcov ./node_modules/mocha/bin/mocha ./tests/data.test.js --timeout 60000 --exit",
+    "backup-worker": "NODE_PATH=~/fsbc/node_modules forever start --append -l ~/fsbc/log/backupForever.log -o ~/fsbc/log/backupOut.log -e ~/fsbc/log/backupErr.log core/storage/backupWorker.js --color",
+    "debug-backup-worker": "NODE_PATH=~/fsbc/node_modules node inspect core/storage/backupWorker.js"
   },
   "dependencies": {
     "async": "^2.6.1",
@@ -31,6 +33,7 @@
     "joi": "^14.3.1",
     "jsonwebtoken": "^8.3.0",
     "mongoose": "^5.4.3",
+    "mongoose-unique-validator": "^2.0.2",
     "morgan": "~1.9.0",
     "pify": "^4.0.0",
     "random-item": "^1.0.0",

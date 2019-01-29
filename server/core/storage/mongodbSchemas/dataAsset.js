@@ -1,6 +1,8 @@
 const mongoose = require('mongoose');
+const uniqueValidator = require('mongoose-unique-validator');
+
 const DataAssetSchema = new mongoose.Schema({
-  guid: String,
+  guid: { type: String, index: true, unique: true, required: true },
   originalName: String,
   mimetype: String,
   lastChangedAt: String,
@@ -10,5 +12,7 @@ const DataAssetSchema = new mongoose.Schema({
   authorizedUsers: [String],
   lastVersion: String
 });
+
+DataAssetSchema.plugin(uniqueValidator);
 
 module.exports = mongoose.model('DataAsset', DataAssetSchema);
