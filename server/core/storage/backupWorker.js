@@ -1,4 +1,5 @@
 const blockchainController = require('../blockchain/controller');
+const storageController = require('./controller');
 const mongodb = require('./mongodb');
 const utils = require('../utils');
 
@@ -7,7 +8,7 @@ if (env.error) {
   throw env.error;
 }
 
-const intervalHour = 0.5;
+const intervalHour = 0.0014;
 const interval = intervalHour * 60 * 60 * 1000; // hour * min * sec * millisec
 var runningBackup = false;
 
@@ -28,7 +29,7 @@ async function backup() {
     });
   const pushError = (errors, type, id, error) => errors.push(`<BACKUP-WORKER> Could not backup ${type} ${id}, error: ${error}`);
 
-  utils.logger.info(`${assets.length} assets, ${participants.length} participants`);
+  utils.logger.info(`${assets.length} assets, ${assets.length} datas, ${participants.length} participants`);
 
   for (const participant of participants) {
     try {
@@ -43,6 +44,18 @@ async function backup() {
       await mongodb.addOrUpdateDataAsset(assetToAssetSchema(asset));
     } catch (error) {
       pushError(errors, 'asset', asset.$identifier, error);
+    }
+  }
+
+  for (const asset of assets) {
+    try {
+      const data = await storageController.getData(asset.$identifier);
+      await mongodb.addOrUpdateData({
+        guid: asset.$identifier,
+        data
+      });
+    } catch (error) {
+      pushError(errors, 'data', asset.$identifier, error);
     }
   }
 
