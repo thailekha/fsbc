@@ -3,13 +3,18 @@ digraph g {
     expressRouter -> filesystemIndex
 
     filesystemIndex -> filesystemController
-    filesystemController -> blockchainController
+    // filesystemController -> blockchainController
     blockchainController -> hyperledgerComposer
     blockchainController -> ethereum
-    filesystemController -> storageController
-    storageController -> ipfs
+    filesystemController -> dataController
+    dataController -> storageController
+    dataController -> dataAssetController -> mongodb
+    // storageController -> ipfs
     storageController -> mongodb
 
     userIndex -> userController
-    userController -> blockchainController
+    // userController -> blockchainController
+    userController -> mongodb
+
+    ipfs
 }

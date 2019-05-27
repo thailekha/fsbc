@@ -1,36 +1,27 @@
 def common_config(config, memory = "512")
-  # Use PACKAGING env var when packing in base mode
-  if !ENV["PACKAGING"].nil?
-    memory = "1024"
-  else
-    puts "Common config with #{memory} RAM"
-  end
-
   config.vm.hostname="vagrant"
   config.vm.synced_folder ".", "/mnt/vagrant", disabled: !ENV["PACKAGING"].nil?
   config.vm.box_check_update = false
   config.vm.provider "virtualbox" do |v|
     v.customize ["modifyvm", :id, "--cpuexecutioncap", "100"]
     v.customize ["modifyvm", :id, "--memory", memory]
-
     # fix VBoxManage error create logfile on the path from the machine that created this base box
     # https://github.com/hashicorp/vagrant/issues/9425
-    if !ENV["PACKAGING"].nil?
-      v.customize [ "modifyvm", :id, "--uartmode1", "disconnected"]
-    end
+    # v.customize [ "modifyvm", :id, "--uartmode1", "disconnected"]
   end
 
-  # https://github.com/hashicorp/vagrant/issues/7508
-  config.vm.provision "fix-no-tty", type: "shell" do |s|
-    s.privileged = false
-    s.inline = "sudo sed -i '/tty/!s/mesg n/tty -s \\&\\& mesg n/' /root/.profile"
-  end
+  fix_ubuntu(config)
+end
 
-  # https://github.com/hashicorp/vagrant/issues/7508
-  config.vm.provision "disable-apt-periodic-updates", type: "shell" do |s|
-    s.privileged = true
-    s.inline = "echo 'APT::Periodic::Enable \"0\";' > /etc/apt/apt.conf.d/02periodic"
-  end
+def fix_ubuntu(config)
+  config.vm.provision "shell", inline: <<-SHELL
+    sed -i '/tty/!s/mesg n/tty -s \\&\\& mesg n/' /root/.profile
+    echo 'APT::Periodic::Enable \"0\";' > /etc/apt/apt.conf.d/02periodic
+    apt-get --purge unattended-upgrades
+    apt-get update
+    while pgrep unattended; do sleep 10; done;
+    apt-get install -y build-essential zip unzip apt-rdepends tree
+  SHELL
 
   #remove dpkg lock
   # config.vm.provision "shell", inline: <<-SHELL
@@ -41,15 +32,26 @@ def common_config(config, memory = "512")
   #   dpkg --configure -a
   #   apt-get -f install -y
   # SHELL
+end
 
+def install_node(config)
   config.vm.provision "shell", inline: <<-SHELL
-    apt-get --purge unattended-upgrades
+    curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash -
+    apt-get install -y nodejs
+  SHELL
+end
+
+def install_docker(config)
+  config.vm.provision "shell", inline: <<-SHELL
+    apt-get update && sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+    apt-key fingerprint 0EBFCD88 | grep docker@docker.com || exit 1
+    add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
     apt-get update
-    function install-make() {
-      while pgrep unattended; do sleep 10; done;
-      apt-get install -y build-essential
-    }
-    which make || install-make
+    apt-get install -y docker-ce
+    docker --version
+
+    docker pull mongo
   SHELL
 end
 
@@ -63,26 +65,11 @@ Vagrant.configure("2") do |vagrant_conf|
     config.vm.box = "ubuntu/xenial64"
   end
 
-  # vagrant_conf.vm.define "composer-machine" do |config|
-  #   common_config(config, "2046")
-  #   config.vm.box = "fsbc/composer"
-  #   config.vm.network "public_network"
-  # end
-
-  (1..3).each do |i|
-    vagrant_conf.vm.define "ipfs#{i}" do |config|
-      # ipfs_machine(config, i > 1)
-      common_config(config)
-      config.vm.box = "ubuntu/xenial64"
-      config.vm.network "public_network"
-    end
-  end
-
   # (1..3).each do |i|
-  #   vagrant_conf.vm.define "server-machine#{i}" do |config|
-  #     ENV["RAM"].nil? ? common_config(config) : common_config(config, ENV["RAM"])
+  #   vagrant_conf.vm.define "ipfs#{i}" do |config|
+  #     # ipfs_machine(config, i > 1)
+  #     common_config(config)
   #     config.vm.box = "ubuntu/xenial64"
-  #     forward_port(config, 9000, 9090 + i)
   #     config.vm.network "public_network"
   #   end
   # end
@@ -90,6 +77,14 @@ Vagrant.configure("2") do |vagrant_conf|
   vagrant_conf.vm.define "dev-machine" do |config|
     common_config(config, "4096")
     config.vm.box = "fsbc/composer"
-    # config.vm.network "public_network"
+    forward_port(config,9000)
+  end
+
+  vagrant_conf.vm.define "backend" do |config|
+    common_config(config, "2048")
+    config.vm.box = "ubuntu/xenial64"
+    install_node(config)
+    install_docker(config)
+    forward_port(config,9000)
   end
 end

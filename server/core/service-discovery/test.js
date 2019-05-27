@@ -1,6 +1,6 @@
 const assert = require('assert');
 
-const ipfs = require('../storage/ipfs');
+const ipfs = require('../data/ipfs');
 const sd = require('./controller');
 
 describe('1 IPFS daemon to be discovered', function() {

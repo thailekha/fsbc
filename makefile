@@ -29,9 +29,18 @@ endef
 deploy:
 	vagrant destroy -f dev-machine
 	vagrant up dev-machine
-	vagrant ssh dev-machine -- -t '$(INIT_NVM) && cd /mnt/vagrant && make singlenode'
-	vagrant ssh dev-machine -- -t '$(INIT_NVM) && npm i -g forever'
+	vagrant ssh dev-machine -- '$(INIT_NVM) && cd /mnt/vagrant && make singlenode'
+	# vagrant ssh dev-machine -- '$(INIT_NVM) && npm i -g forever'
+centralized:
+	vagrant destroy -f backend
+	vagrant up backend
+	vagrant ssh backend -- 'cd /mnt/vagrant && make backend'
+	# vagrant ssh backend -- 'npm i -g forever'
+backend: make-production-directories install-ngrok yarn-command
+	cd server && npm run yarn-install
 singlenode: make-production-directories jq-command install-ngrok yarn-command ipfs-command start-composer sleep-3 init-business-network config-ipfs
+	nohup ipfs daemon 0<&- &>/dev/null &
+	pgrep ipfs
 	cd server && npm run yarn-install
 # ===================
 # Composer VM

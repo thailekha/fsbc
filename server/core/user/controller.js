@@ -1,7 +1,7 @@
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
-const blockchainController = require('../blockchain/controller');
-// const mongodb = require('../storage/mongodb');
+// const blockchainController = require('../blockchain/controller');
+const mongodb = require('../data/mongodb');
 const statusCodes = require('http-status-codes');
 const utils = require('../utils');
 
@@ -22,22 +22,34 @@ function sha512(password, salt) {
 UserController.register = async function(username, password, role) {
   username = username.toLowerCase();
   const salt = genRandomString(16);
-  await blockchainController.registerParticipant(username, role, salt, sha512(password, salt));
-  // await mongodb.postUser({
-  //   username: username,
-  //   hashedPassword: sha512(password, salt),
-  //   salt: salt,
-  //   role: role
-  // });
+  const hashedPassword = sha512(password, salt);
+
+  // await blockchainController.registerParticipant(username, role, salt, hashedPassword);
+
+  try {
+    await mongodb.postUser({username,hashedPassword,salt,role});
+  } catch (err) {
+    throw utils.formatError(err.message, 'to be unique', 'Email already registered', statusCodes.CONFLICT, 'Cannot register');
+  }
 };
 
 UserController.login = async function(username, password) {
   username = username.toLowerCase();
-  const claimedUser = await blockchainController.queryGetUser(username);
+
+  // const claimedUser = await blockchainController.queryGetUser(username);
+  // if (sha512(password, claimedUser.salt) !== claimedUser.hashedPassword) {
+  //   throw utils.constructError('Password is incorrect', statusCodes.BAD_REQUEST);
+  // }
+  // return jwt.sign({ username: claimedUser.$identifier }, 'secret', { expiresIn: '5h' });
+
+  const claimedUser = await mongodb.getUser(username);
+  if (!claimedUser) {
+    throw utils.constructError('Email is incorrect', statusCodes.BAD_REQUEST);
+  }
   if (sha512(password, claimedUser.salt) !== claimedUser.hashedPassword) {
     throw utils.constructError('Password is incorrect', statusCodes.BAD_REQUEST);
   }
-  return jwt.sign({ username: claimedUser.$identifier }, 'secret', { expiresIn: '5h' });
+  return jwt.sign({ username: claimedUser.username }, 'secret', { expiresIn: '5h' });
 };
 
 module.exports = UserController;

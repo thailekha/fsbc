@@ -1,9 +1,14 @@
-const blockchainController = require('../blockchain/controller');
-const storageController = require('../storage/controller');
-// const mongodb = require('../storage/mongodb');
+const mongodb = require('../data/mongodb');
 const crypto = require('crypto');
+const hash = require('object-hash');
+const statusCodes = require('http-status-codes');
+const utils = require('../utils');
 
 const FilesystemController = {};
+
+// ############################
+// Encryption
+// ############################
 
 if (!process.env.DATAENCRYPT_SECRET) {
   throw new Error('DATAENCRYPT_SECRET not set');
@@ -33,127 +38,254 @@ function decrypt(encrypted) {
   return decrypted;
 }
 
-FilesystemController.getAllData = async function(username) {
-  const blockchainRecords = await blockchainController.getAllData(username);
-  const allLatestDataAssets = [];
-  for (const data of blockchainRecords) {
-    const latestDataAsset = await blockchainController.getLatestData(data, username);
-    if (latestDataAsset && allLatestDataAssets.findIndex(i => i.$identifier === latestDataAsset.$identifier) < 0) {
-      allLatestDataAssets.push(latestDataAsset);
-    }
+// ############################
+// Validator
+// ############################
+
+function validateAccessDataAsset(data, dataAsset, username) {
+  //check user exists
+  if (!data) {
+    throw utils.constructError(`Cannot find data`, statusCodes.NOT_FOUND);
   }
-  allLatestDataAssets.sort((x,y) => x.lastChangedAt < y.lastChangedAt);
-  // console.log(allLatestDataAssets.map(d => d.lastChangedAt));
-  const allLatestData = [];
-  for (const guid of allLatestDataAssets.map(d => d.$identifier)) {
-    const data = decrypt(await storageController.getData(guid));
-    allLatestData.push({ guid, data });
+  if (!dataAsset) {
+    throw utils.constructError(`Cannot find data asset`, statusCodes.NOT_FOUND);
   }
-  return allLatestData;
+  const valid = dataAsset.owner === username || dataAsset.authorizedUsers.includes(username);
+  if (!valid) {
+    throw utils.constructError(`Unauthorized user`, statusCodes.FORBIDDEN);
+  }
+}
+
+function dataAssetExists(dataAsset) {
+  if (!dataAsset) {
+    throw utils.constructError(`Cannot find data asset`, statusCodes.NOT_FOUND);
+  }
+}
+
+// ############################
+// Basic CRUD
+// ############################
+
+FilesystemController.postData = async function(username, data) {
+  data._dateAdded = (new Date()).getTime();
+  const encryptedData = encrypt(data);
+
+  const guid = hash(encryptedData);
+
+  await mongodb.postData({
+    guid: guid,
+    data: encryptedData
+  });
+
+  await mongodb.postDataAsset({
+    guid: guid,
+    originalName: '',
+    mimetype: 'application/json',
+    lastChangedAt: (new Date()).getTime(),
+    active: 1,
+    owner: username,
+    lastChangedBy: username,
+    authorizedUsers: [],
+    lastVersion: null
+  });
+  return { globalUniqueID: guid};
 };
 
 FilesystemController.getData = async function(guid, username) {
-  const blockchainRecord = await blockchainController.getData(guid, username);
-  await blockchainController.submitGetData(username, blockchainRecord.$identifier);
-  const data = decrypt(await storageController.getData(blockchainRecord.$identifier));
-  return data;
+  const dataAsset = await mongodb.getDataAsset(guid);
+  const data = await mongodb.getData(guid);
+  validateAccessDataAsset(data, dataAsset, username);
+  return decrypt(data.data);
+};
+
+FilesystemController.putData = async function(guid, username, data) {
+  const dataAsset = await mongodb.getDataAsset(guid);
+  const oldData = await mongodb.getData(guid);
+  validateAccessDataAsset(oldData, dataAsset, username);
+
+  data._dateAdded = (new Date()).getTime();
+  const encryptedData = encrypt(data);
+  const newGuid = hash(encryptedData);
+
+  await mongodb.postData({
+    guid: newGuid,
+    data: encryptedData
+  });
+
+  await mongodb.postDataAsset({
+    guid: newGuid,
+    originalName: dataAsset.originalName,
+    mimetype: dataAsset.mimetype,
+    lastChangedAt: (new Date()).getTime(),
+    active: 1,
+    owner: dataAsset.owner,
+    lastChangedBy: username,
+    authorizedUsers: dataAsset.authorizedUsers,
+    lastVersion: guid
+  });
+
+  return { globalUniqueID: newGuid };
+};
+
+// ############################
+// Advanced
+// ############################
+
+FilesystemController.getAllData = async function(username) {
+  const dataAssets = (await mongodb.getDataAssets())
+    .filter(a => a.owner === username || a.authorizedUsers.includes(username));
+
+  const latestAssets = [];
+  for (const asset of dataAssets) {
+    const latest = await this.getLatestDataAsset(asset, username);
+    if (latest && latestAssets.findIndex(i => i.guid === latest.guid) < 0) {
+      latestAssets.push(latest);
+    }
+  }
+  // change lastChangedAt schema to int?
+  latestAssets.sort((x,y) => x.lastChangedAt < y.lastChangedAt);
+
+  const latestDatas = [];
+  for (const guid of latestAssets.map(d => d.guid)) {
+    const data = await this.getData(guid, username);
+    latestDatas.push({ guid, data });
+  }
+
+  return latestDatas;
+};
+
+FilesystemController.getLatestDataAsset = async function(currentDataAsset, username) {
+  // in case of loop
+  const checked = new Set([]);
+  let latestDataAsset;
+
+  var requestedData = [currentDataAsset];
+  while (requestedData.length === 1 && !checked.has(requestedData[0].guid)) {
+    //need to check authorization at each version?
+    checked.add(requestedData[0].guid);
+    latestDataAsset = requestedData[0];
+    requestedData = await mongodb.getNewerVersionOfDataAsset(latestDataAsset.guid);
+    requestedData = requestedData ? [requestedData] : [];
+  }
+  return latestDataAsset;
 };
 
 FilesystemController.getLatestData = async function(guid, username) {
-  // get data first to check authorization ?
-  // await this.getData(guid, username);
-  const blockchainRecord = await blockchainController.getData(guid, username);
-  var latestGlobalUniqueID = (await blockchainController.getLatestData(blockchainRecord, username)).$identifier;
+  const dataAsset = await mongodb.getDataAsset(guid);
+  dataAssetExists(dataAsset);
+
+  var latestGlobalUniqueID = (await this.getLatestDataAsset(dataAsset, username)).guid;
   if (!latestGlobalUniqueID) {
     //already latest
     latestGlobalUniqueID = guid;
   }
 
-  const data = decrypt(await storageController.getData(latestGlobalUniqueID));
-  // await blockchainController.submitGetData(username, guid);
+  const data = await this.getData(latestGlobalUniqueID, username);
   return { guid: latestGlobalUniqueID, data };
 };
 
-FilesystemController.postData = async function(username, data) {
-  data._dateAdded = new Date();
-  const encryptedData = encrypt(data);
-  const guid = await storageController.postData(encryptedData);
-  const dataAsset = await blockchainController.postData(guid, username);
-  await blockchainController.submitPostData(username, guid);
-  // await mongodb.postData({
-  //   guid: guid,
-  //   data: encryptedData
-  // });
-  // await mongodb.postDataAsset({
-  //   guid: guid,
-  //   originalName: dataAsset.originalName,
-  //   mimetype: dataAsset.mimetype,
-  //   lastChangedAt: dataAsset.lastChangedAt,
-  //   active: 1,
-  //   owner: dataAsset.owner,
-  //   lastChangedBy: dataAsset.lastChangedBy,
-  //   authorizedUsers: dataAsset.authorizedUsers,
-  //   lastVersion: ''
-  // });
-  return { globalUniqueID: guid};
-};
+function constructVersion(asset) {
+  const result = {
+    id: asset.guid,
+    lastChangedAt: asset.lastChangedAt,
+    lastChangedBy: asset.lastChangedBy
+  };
 
-FilesystemController.putData = async function(guid, username, data) {
-  const blockchainRecord = await blockchainController.getData(guid, username);
-  const encryptedData = encrypt(data);
-  const newGuid = await storageController.postData(encryptedData);
-  const newBlockchainRecord = await blockchainController.putData(blockchainRecord, newGuid, username);
-  await blockchainController.submitPutData(username, blockchainRecord, newBlockchainRecord);
-  // await mongodb.postData({
-  //   guid: newGuid,
-  //   data: encryptedData
-  // });
-  // await mongodb.postDataAsset({
-  //   guid: newGuid,
-  //   originalName: newBlockchainRecord.originalName,
-  //   mimetype: newBlockchainRecord.mimetype,
-  //   lastChangedAt: newBlockchainRecord.lastChangedAt,
-  //   active: 1,
-  //   owner: newBlockchainRecord.owner,
-  //   lastChangedBy: newBlockchainRecord.lastChangedBy,
-  //   authorizedUsers: newBlockchainRecord.authorizedUsers,
-  //   lastVersion: newBlockchainRecord.lastVersion
-  // });
-  return { globalUniqueID: newGuid};
-};
+  return JSON.parse(JSON.stringify(result));
+}
 
+// Trace: retrieve only items that user has access to. only throws 403 if the requested id is unauthorized
 FilesystemController.trace = async function(guid, username) {
-  const allVersionRecords = await blockchainController.traceData(guid, username);
+  var point = await mongodb.getDataAsset(guid);
+  if (!point) {
+    throw utils.constructError(`Cannot find data asset`, statusCodes.NOT_FOUND);
+  }
+
+  const assetVersions = [];
+  while (point.lastVersion) {
+    assetVersions.push(constructVersion(point));
+
+    const oldAsset = await mongodb.getDataAsset(point.lastVersion);
+    if (!oldAsset) {
+      // throw utils.constructError(`Could not trace data ${point.lastVersion} or unauthorized user`, statusCodes.NOT_FOUND);
+      break;
+    }
+
+    point = oldAsset;
+  }
+
+  // the oldest data asset has no lastVersion
+  if (!point.lastVersion) {
+    assetVersions.push(constructVersion(point));
+  }
+
   const allVersions = [];
-  for (const record of allVersionRecords) {
-    const data = decrypt(await storageController.getData(record.id));
-    data.lastChangedAt = record.lastChangedAt;
-    data.lastChangedBy = record.lastChangedBy;
-    allVersions.push(data);
+  for (const asset of assetVersions) {
+    try {
+      const data = await this.getData(asset.id, username);
+      data.lastChangedAt = asset.lastChangedAt;
+      data.lastChangedBy = asset.lastChangedBy;
+      allVersions.push(data);
+    } catch (err) {
+      if (err.code === statusCodes.FORBIDDEN) {
+        continue;
+      }
+      throw err;
+    }
   }
   return allVersions;
 };
 
+// ############################
+// Access control
+// ############################
+
 FilesystemController.grantAccess = async function(guid, username, grantedUsers) {
   grantedUsers = grantedUsers.map(u => u.toLowerCase());
-  const { blockchainRecord, newGrantedUsers } = await blockchainController.grantAccess(guid, username, grantedUsers);
-  // await mongodb.putDataAsset(guid, {
-  //   authorizedUsers: blockchainRecord.authorizedUsers,
-  // });
-  return { newGrantedUsers };
+  const dataAsset = await mongodb.getDataAsset(guid);
+  dataAssetExists(dataAsset);
+  const names = (await mongodb.getUsers()).map(u => u.username);
+
+  const updatedAuthorizedUsers = Array.from(new Set(grantedUsers)) // no duplicate
+    // authorize only usernames that have not been authorized
+    .filter(username => username !== dataAsset.owner)
+    .filter(username => !dataAsset.authorizedUsers.find(u => u === username));
+
+  const validAuthorizedUsers = [];
+  for (const u of updatedAuthorizedUsers) {
+    const exist = names.includes(u);
+    if (exist) {
+      validAuthorizedUsers.push(u);
+    } else {
+      utils.logger.warn(`<GRANT-ACCESS> ${u} does not exist`);
+    }
+  }
+
+  if (validAuthorizedUsers.length > 0) {
+    dataAsset.authorizedUsers = dataAsset.authorizedUsers.concat(validAuthorizedUsers);
+    await dataAsset.save();
+  }
+
+  return { newGrantedUsers: validAuthorizedUsers };
 };
 
 FilesystemController.revokeAccess = async function(guid, username, userToBeRevoked) {
   userToBeRevoked = userToBeRevoked.toLowerCase();
-  const blockchainRecord = await blockchainController.revokeAccess(guid, username, userToBeRevoked);
-  // await mongodb.putDataAsset(guid, {
-  //   authorizedUsers: blockchainRecord.authorizedUsers,
-  // });
+  // const names = (await mongodb.getUsers()).map(u => u.username);
+  // if (!names.includes(userToBeRevoked)) {
+  //   throw utils.constructError(`${userToBeRevoked} does not exist`, statusCodes.BAD_REQUEST);
+  // }
+
+  const dataAsset = await mongodb.getDataAsset(guid);
+  dataAssetExists(dataAsset);
+  dataAsset.authorizedUsers = dataAsset.authorizedUsers.filter(user => user !== userToBeRevoked);
+  await dataAsset.save();
 };
 
 FilesystemController.getAccessInfo = async function(guid, username) {
-  const grantedUsers = await blockchainController.getAccessInfo(guid, username);
-  return { grantedUsers };
+  const dataAsset = await mongodb.getDataAsset(guid);
+  dataAssetExists(dataAsset);
+  return { grantedUsers: dataAsset.authorizedUsers };
 };
 
 module.exports = FilesystemController;
