@@ -12,7 +12,7 @@ async function connectToDatabase() {
     return;
   }
 
-  const db = await mongoose.connect(`mongodb+srv://${process.env.ATLAS_CREDS}@coffeeproject-5irgt.mongodb.net/firstship?retryWrites=true`, { useNewUrlParser: true, useFindAndModify: false, useCreateIndex: true });
+  const db = await mongoose.connect(`mongodb+srv://${process.env.ATLAS_CREDS}?retryWrites=true`, { useNewUrlParser: true, useFindAndModify: false, useCreateIndex: true });
   // const db = await mongoose.connect(`mongodb://127.0.0.1:27017/test`, { useNewUrlParser: true, useFindAndModify: false, useCreateIndex: true });
   isConnected = db.connections[0].readyState;
 }
