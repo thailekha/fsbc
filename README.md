@@ -29,6 +29,11 @@ vagrant ssh dev-machine
     cd /mnt/vagrant && make singlenode
 ```
 
+## Mongodb container
+```
+sudo docker run -p 127.0.0.1:27017:27017 mongo
+```
+
 # Deploy
 - Clone this repo
 - Create a .env file and add the following values:
