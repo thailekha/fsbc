@@ -42,6 +42,8 @@ function decrypt(encrypted) {
 // Validator
 // ############################
 
+const validAccess = (dataAsset, username) => dataAsset.owner === username || dataAsset.authorizedUsers.includes(username);
+
 function validateAccessDataAsset(data, dataAsset, username) {
   //check user exists
   if (!data) {
@@ -50,8 +52,7 @@ function validateAccessDataAsset(data, dataAsset, username) {
   if (!dataAsset) {
     throw utils.constructError(`Cannot find data asset`, statusCodes.NOT_FOUND);
   }
-  const valid = dataAsset.owner === username || dataAsset.authorizedUsers.includes(username);
-  if (!valid) {
+  if (!validAccess(dataAsset, username)) {
     throw utils.constructError(`Unauthorized user`, statusCodes.FORBIDDEN);
   }
 }
@@ -135,14 +136,17 @@ FilesystemController.putData = async function(guid, username, data) {
 
 FilesystemController.getAllData = async function(username) {
   var latestAssets = {};
-  (await mongodb.getDataAssets())
+  (await mongodb.getAllDataAssets())
     .filter(a => a.owner === username || a.authorizedUsers.includes(username))
     .forEach(a => {
       if (!latestAssets[a.firstVersion] || latestAssets[a.firstVersion].lastChangedAt < a.lastChangedAt) {
         latestAssets[a.firstVersion] = a;
       }
     });
-  latestAssets = Object.values(latestAssets);
+  latestAssets = Object
+    .values(latestAssets)
+    .filter(a => validAccess(a, username));
+  // change lastChangedAt schema to int?
   latestAssets.sort((x,y) => x.lastChangedAt < y.lastChangedAt);
 
   // const latestAssets = [];
@@ -152,16 +156,14 @@ FilesystemController.getAllData = async function(username) {
   //     latestAssets.push(latest);
   //   }
   // }
-  // // change lastChangedAt schema to int?
   // latestAssets.sort((x,y) => x.lastChangedAt < y.lastChangedAt);
 
-  const latestDatas = [];
-  for (const guid of latestAssets.map(d => d.guid)) {
-    const data = await this.getData(guid, username);
-    latestDatas.push({ guid, data });
-  }
+  const dates = {};
+  latestAssets.forEach(a => dates[a.guid] = a.lastChangedAt);
+  const lastestDatas = await mongodb.getDatas(latestAssets.map(d => d.guid));
+  lastestDatas.sort((x,y) => dates[x.guid] < dates[y.guid]);
 
-  return latestDatas;
+  return lastestDatas.map(d => ({data: decrypt(d.data)}));
 };
 
 FilesystemController.getLatestDataAsset = async function(currentDataAsset, username) {

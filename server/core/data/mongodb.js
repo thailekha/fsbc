@@ -12,8 +12,8 @@ async function connectToDatabase() {
     return;
   }
 
-  const db = await mongoose.connect(`mongodb+srv://${process.env.ATLAS_CREDS}?retryWrites=true`, { useNewUrlParser: true, useFindAndModify: false, useCreateIndex: true });
-  // const db = await mongoose.connect(`mongodb://127.0.0.1:27017/test`, { useNewUrlParser: true, useFindAndModify: false, useCreateIndex: true });
+  // const db = await mongoose.connect(`mongodb+srv://${process.env.ATLAS_CREDS}?retryWrites=true`, { useNewUrlParser: true, useFindAndModify: false, useCreateIndex: true });
+  const db = await mongoose.connect(`mongodb://127.0.0.1:27017/test`, { useNewUrlParser: true, useFindAndModify: false, useCreateIndex: true });
   isConnected = db.connections[0].readyState;
 }
 
@@ -67,7 +67,7 @@ MongoDBController.getDataAsset = async function(guid) {
 //   await res.save();
 // };
 
-MongoDBController.getDataAssets = async function() {
+MongoDBController.getAllDataAssets = async function() {
   await connectToDatabase();
   const res = await DataAsset.find().lean();
   return res;
@@ -91,6 +91,14 @@ MongoDBController.postData = async function(data) {
 MongoDBController.getData = async function(guid) {
   await connectToDatabase();
   return await Data.findOne({guid}).lean();
+};
+
+MongoDBController.getDatas = async function(guids) {
+  await connectToDatabase();
+  const res = await Data.find({
+    'guid': { $in: guids}
+  }).lean();
+  return res;
 };
 
 module.exports = MongoDBController;
