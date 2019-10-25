@@ -86,7 +86,8 @@ FilesystemController.postData = async function(username, data) {
     owner: username,
     lastChangedBy: username,
     authorizedUsers: [],
-    lastVersion: null
+    lastVersion: null,
+    firstVersion: guid
   });
   return { globalUniqueID: guid};
 };
@@ -121,7 +122,8 @@ FilesystemController.putData = async function(guid, username, data) {
     owner: dataAsset.owner,
     lastChangedBy: username,
     authorizedUsers: dataAsset.authorizedUsers,
-    lastVersion: guid
+    lastVersion: guid,
+    firstVersion: dataAsset.firstVersion
   });
 
   return { globalUniqueID: newGuid };
@@ -132,18 +134,26 @@ FilesystemController.putData = async function(guid, username, data) {
 // ############################
 
 FilesystemController.getAllData = async function(username) {
-  const dataAssets = (await mongodb.getDataAssets())
-    .filter(a => a.owner === username || a.authorizedUsers.includes(username));
-
-  const latestAssets = [];
-  for (const asset of dataAssets) {
-    const latest = await this.getLatestDataAsset(asset, username);
-    if (latest && latestAssets.findIndex(i => i.guid === latest.guid) < 0) {
-      latestAssets.push(latest);
-    }
-  }
-  // change lastChangedAt schema to int?
+  var latestAssets = {};
+  (await mongodb.getDataAssets())
+    .filter(a => a.owner === username || a.authorizedUsers.includes(username))
+    .forEach(a => {
+      if (!latestAssets[a.firstVersion] || latestAssets[a.firstVersion].lastChangedAt < a.lastChangedAt) {
+        latestAssets[a.firstVersion] = a;
+      }
+    });
+  latestAssets = Object.values(latestAssets);
   latestAssets.sort((x,y) => x.lastChangedAt < y.lastChangedAt);
+
+  // const latestAssets = [];
+  // for (const asset of dataAssets) {
+  //   const latest = await this.getLatestDataAsset(asset, username);
+  //   if (latest && latestAssets.findIndex(i => i.guid === latest.guid) < 0) {
+  //     latestAssets.push(latest);
+  //   }
+  // }
+  // // change lastChangedAt schema to int?
+  // latestAssets.sort((x,y) => x.lastChangedAt < y.lastChangedAt);
 
   const latestDatas = [];
   for (const guid of latestAssets.map(d => d.guid)) {

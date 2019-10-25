@@ -10,7 +10,8 @@ const DataAssetSchema = new mongoose.Schema({
   owner: String,
   lastChangedBy: String,
   authorizedUsers: [String],
-  lastVersion: String
+  lastVersion: String,
+  firstVersion: { type: String, required: true }
 });
 
 DataAssetSchema.plugin(uniqueValidator);
