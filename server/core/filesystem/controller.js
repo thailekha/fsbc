@@ -163,7 +163,7 @@ FilesystemController.getAllData = async function(username) {
   const lastestDatas = await mongodb.getDatas(latestAssets.map(d => d.guid));
   lastestDatas.sort((x,y) => dates[x.guid] < dates[y.guid]);
 
-  return lastestDatas.map(d => ({data: decrypt(d.data)}));
+  return lastestDatas.map(d => ({guid: d.guid, data: decrypt(d.data)}));
 };
 
 //need to check authorization at each version?
