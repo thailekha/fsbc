@@ -58,6 +58,12 @@ MongoDBController.getDataAsset = async function(guid) {
   return res;
 };
 
+MongoDBController.getDataAssetByFirstVersion = async function(firstVersion) {
+  await connectToDatabase();
+  const res = await DataAsset.find({firstVersion}).lean();
+  return res;
+};
+
 // MongoDBController.putDataAsset = async function(guid, data) {
 //   await connectToDatabase();
 //   const res = await DataAsset.findOne({guid});

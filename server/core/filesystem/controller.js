@@ -166,20 +166,31 @@ FilesystemController.getAllData = async function(username) {
   return lastestDatas.map(d => ({data: decrypt(d.data)}));
 };
 
+//need to check authorization at each version?
 FilesystemController.getLatestDataAsset = async function(currentDataAsset, username) {
-  // in case of loop
-  const checked = new Set([]);
-  let latestDataAsset;
+  // // in case of loop
+  // const checked = new Set([]);
+  // let latestDataAsset;
 
-  var requestedData = [currentDataAsset];
-  while (requestedData.length === 1 && !checked.has(requestedData[0].guid)) {
-    //need to check authorization at each version?
-    checked.add(requestedData[0].guid);
-    latestDataAsset = requestedData[0];
-    requestedData = await mongodb.getNewerVersionOfDataAsset(latestDataAsset.guid);
-    requestedData = requestedData ? [requestedData] : [];
-  }
-  return latestDataAsset;
+  // var requestedData = [currentDataAsset];
+  // while (requestedData.length === 1 && !checked.has(requestedData[0].guid)) {
+  //   checked.add(requestedData[0].guid);
+  //   latestDataAsset = requestedData[0];
+  //   requestedData = await mongodb.getNewerVersionOfDataAsset(latestDataAsset.guid);
+  //   requestedData = requestedData ? [requestedData] : [];
+  // }
+
+  const sameFirstVersionAssets = (await mongodb.getDataAssetByFirstVersion(currentDataAsset.firstVersion))
+    .filter(a => a.owner === username || a.authorizedUsers.includes(username));
+  var latestAsset = sameFirstVersionAssets[0];
+  sameFirstVersionAssets
+    .forEach(a => {
+      if (a.lastChangedAt > latestAsset.lastChangedAt) {
+        latestAsset = a;
+      }
+    });
+
+  return latestAsset;
 };
 
 FilesystemController.getLatestData = async function(guid, username) {
