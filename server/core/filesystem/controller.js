@@ -88,7 +88,8 @@ FilesystemController.postData = async function(username, data) {
     lastChangedBy: username,
     authorizedUsers: [],
     lastVersion: null,
-    firstVersion: guid
+    firstVersion: guid,
+    sourceOfPublish: guid
   });
   return { globalUniqueID: guid};
 };
@@ -124,7 +125,8 @@ FilesystemController.putData = async function(guid, username, data) {
     lastChangedBy: username,
     authorizedUsers: dataAsset.authorizedUsers,
     lastVersion: guid,
-    firstVersion: dataAsset.firstVersion
+    firstVersion: dataAsset.firstVersion,
+    sourceOfPublish: dataAsset.sourceOfPublish
   });
 
   return { globalUniqueID: newGuid };
@@ -206,6 +208,55 @@ FilesystemController.getLatestData = async function(guid, username) {
   const data = await this.getData(latestGlobalUniqueID, username);
   return { guid: latestGlobalUniqueID, data };
 };
+
+async function processDataForPublish(datas, dataAssets, username, sourceOfPublish, data) {
+  const d = JSON.parse(JSON.stringify(data));
+  await timeout(1.5); //sleep milliseconds to ensure a unique guid
+  d._dateAdded = (new Date()).getTime();
+  const encryptedData = encrypt(d);
+  const guid = hash(encryptedData);
+
+  datas.push({
+    guid: guid,
+    data: encryptedData
+  });
+
+  dataAssets.push({
+    guid,
+    originalName: '',
+    mimetype: 'application/json',
+    lastChangedAt: (new Date()).getTime(),
+    active: 1,
+    owner: username,
+    lastChangedBy: username,
+    authorizedUsers: [],
+    lastVersion: null,
+    firstVersion: guid,
+    sourceOfPublish: sourceOfPublish ? sourceOfPublish : guid
+  });
+
+  return guid;
+}
+
+FilesystemController.publishData = async function(username, data) {
+  if ((await mongodb.getUser(username)).role !== 'INSTRUCTOR') {
+    throw utils.constructError(`You are not authorized to publish`, statusCodes.UNAUTHORIZED);
+  }
+
+  const datas = [];
+  const dataAssets = [];
+  const guidForInstructor = await processDataForPublish(datas, dataAssets, username, null, data);
+  for (const user of (await mongodb.getUsers()).filter(u => u.username !== username)) {
+    await processDataForPublish(datas, dataAssets, user.username, guidForInstructor, data);
+  }
+  await mongodb.postData(datas);
+  await mongodb.postDataAsset(dataAssets);
+  return { globalUniqueID: guidForInstructor };
+};
+
+function timeout(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 function constructVersion(asset) {
   const result = {

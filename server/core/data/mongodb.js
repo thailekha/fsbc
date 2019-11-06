@@ -47,6 +47,9 @@ MongoDBController.getUsers = async function() {
 // (Update using get and save instead of findOneAndUpdate)
 // ############################
 
+/**
+ * @param data: both object and array are supported by  mongoose
+ */
 MongoDBController.postDataAsset = async function(data) {
   await connectToDatabase();
   await DataAsset.create(data);
@@ -89,6 +92,9 @@ MongoDBController.getNewerVersionOfDataAsset = async function(lastVersion) {
 // Data
 // ############################
 
+/**
+ * @param data: both object and array are supported by  mongoose
+ */
 MongoDBController.postData = async function(data) {
   await connectToDatabase();
   await Data.create(data);

@@ -23,7 +23,13 @@ function addRole(user) {
   return nUser;
 }
 
-describe('User management', function() {
+function addRoleInstructor(user) {
+  const nUser = JSON.parse(JSON.stringify(user));
+  nUser.role = "INSTRUCTOR";
+  return nUser;
+}
+
+describe('user-management', function() {
   it('should register', async() => {
     const user = generateUser();
     await request(app)
@@ -93,7 +99,7 @@ describe('User management', function() {
   });
 });
 
-describe('get data', async() => {
+describe('get-data', async() => {
   it('should get data', async() => {
     const user = generateUser();
 
@@ -150,7 +156,7 @@ describe('get data', async() => {
   });
 });
 
-describe('allTasks', async() => {
+describe('all-tasks', async() => {
   it('should register, login, post, get, put, get, trace, get-latest, grant', async() => {
     const user1 = generateUser();
     const user2 = generateUser();
@@ -259,7 +265,7 @@ describe('allTasks', async() => {
   });
 });
 
-describe('getLatest', async() => {
+describe('get-latest', async() => {
   it('should post 2 data assets, and getAll data', async() => {
     const user1 = generateUser();
 
@@ -437,7 +443,66 @@ function timeout(ms) {
 
 // add test for update to the same data
 
-describe('grant, revoke access', async() => {
+describe('publish-data', async() => {
+  it('should create users including instructor and publish data', async() => {
+    const user1 = generateUser(); //instructor
+    const user2 = generateUser();
+    const user3 = generateUser();
+    const data = {
+      coffee: `mocha-${uniqid()}`
+    };
+
+    const tokens = [];
+
+    for (const user of [user1, user2, user3]) {
+      await request(app)
+        .post('/v1/user/register')
+        .set('Content-Type', 'application/json')
+        .send(user.username === user1.username ? addRoleInstructor(user): addRole(user))
+        .expect(200);
+
+      const {body: {token}} = await request(app)
+        .post('/v1/user/login')
+        .set('Content-Type', 'application/json')
+        .send(user)
+        .expect(200);
+
+      tokens.push(token);
+    }
+
+    const [token1, token2, token3] = tokens;
+
+    const {body: {globalUniqueID}} = await request(app)
+      .post('/v1/fs/publish')
+      .set('Content-Type', 'application/json')
+      .set('Authorization', `Bearer ${token1}`)
+      .send(data)
+      .expect(200);
+
+    const resGet1 = await request(app)
+      .get(`/v1/fs/${globalUniqueID}`)
+      .set('Content-Type', 'application/json')
+      .set('Authorization', `Bearer ${token1}`)
+      .expect(200);
+    assert.deepEqual(resGet1.body.coffee, data.coffee);
+
+    const resGet2 = await request(app)
+      .get(`/v1/fs`)
+      .set('Content-Type', 'application/json')
+      .set('Authorization', `Bearer ${token2}`)
+      .expect(200);
+    assert.deepEqual(resGet2.body[0].data.coffee, data.coffee);
+
+    const resGet3 = await request(app)
+      .get(`/v1/fs`)
+      .set('Content-Type', 'application/json')
+      .set('Authorization', `Bearer ${token3}`)
+      .expect(200);
+    assert.deepEqual(resGet3.body[0].data.coffee, data.coffee);
+  });
+});
+
+describe('grant-revoke', async() => {
   it('should grant, revoke, and show access', async() => {
     const user1 = generateUser();
     const user2 = generateUser();

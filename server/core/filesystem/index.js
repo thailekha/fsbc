@@ -80,4 +80,12 @@ router.get('/:id/access', async(req, res, next) => {
   }
 });
 
+router.post('/publish', validator(schemas.postData), async(req, res, next) => {
+  try {
+    res.json(await fsController.publishData(req.username, req.body));
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;

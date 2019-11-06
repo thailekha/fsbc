@@ -11,7 +11,8 @@ const DataAssetSchema = new mongoose.Schema({
   lastChangedBy: String,
   authorizedUsers: [String],
   lastVersion: String,
-  firstVersion: { type: String, required: true }
+  firstVersion: { type: String, required: true },
+  sourceOfPublish: { type: String, required: true }
 });
 
 DataAssetSchema.plugin(uniqueValidator);
