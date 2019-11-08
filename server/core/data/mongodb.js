@@ -18,6 +18,19 @@ async function connectToDatabase() {
 }
 
 // ############################
+// For testing
+// ############################
+
+MongoDBController.deleteDocuments = async function() {
+  await connectToDatabase();
+  if (mongoose.connection.host === '127.0.0.1') {
+    await User.deleteMany({});
+    await DataAsset.deleteMany({});
+    await Data.deleteMany({});
+  }
+};
+
+// ############################
 // User
 // ############################
 
@@ -40,6 +53,11 @@ MongoDBController.getUser = async function(username) {
 MongoDBController.getUsers = async function() {
   await connectToDatabase();
   return await User.find();
+};
+
+MongoDBController.hasInstructor = async function() {
+  await connectToDatabase();
+  return await User.find({role: 'INSTRUCTOR'});
 };
 
 // ############################

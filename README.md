@@ -31,7 +31,7 @@ vagrant ssh dev-machine
 
 ## Mongodb container
 ```
-sudo docker run -p 127.0.0.1:27017:27017 mongo
+sudo docker run --rm -p 127.0.0.1:27017:27017 mongo
 ```
 
 # Deploy

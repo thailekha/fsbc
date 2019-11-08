@@ -26,6 +26,10 @@ UserController.register = async function(username, password, role) {
 
   // await blockchainController.registerParticipant(username, role, salt, hashedPassword);
 
+  if (role === 'INSTRUCTOR' && (await mongodb.hasInstructor()).length > 0) {
+    throw utils.constructError(`Instructor already registered`, statusCodes.CONFLICT);
+  }
+
   try {
     await mongodb.postUser({username,hashedPassword,salt,role});
   } catch (err) {

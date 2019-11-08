@@ -5,6 +5,7 @@ const app = require('../bin/www');
 const expect = chai.expect;
 const uniqid = require('uniqid');
 const statusCodes = require('http-status-codes');
+const mongodb = require('../core/data/mongodb');
 
 // const username = `test-${uniqid()}`;
 // const password = "123";
@@ -30,6 +31,9 @@ function addRoleInstructor(user) {
 }
 
 describe('user-management', function() {
+  before(async() => {
+    await mongodb.deleteDocuments();
+  });
   it('should register', async() => {
     const user = generateUser();
     await request(app)
@@ -97,6 +101,23 @@ describe('user-management', function() {
       .expect(statusCodes.BAD_REQUEST);
     assert.equal(res.body.message, 'Password is incorrect');
   });
+  it('should not allow two instructors', async() => {
+    const user1 = generateUser();
+    const user2 = generateUser();
+    await request(app)
+      .post('/v1/user/register')
+      .set('Content-Type', 'application/json')
+      .send(addRoleInstructor(user1))
+      .expect(200);
+    await request(app)
+      .post('/v1/user/register')
+      .set('Content-Type', 'application/json')
+      .send(addRoleInstructor(user2))
+      .expect(409);
+  });
+  after(async() => {
+    await mongodb.deleteDocuments();
+  });
 });
 
 describe('get-data', async() => {
@@ -104,7 +125,7 @@ describe('get-data', async() => {
     const user = generateUser();
 
     const data = {
-      coffee: `mocha-${uniqid()}`
+      coffee: `mocha`
     };
 
     await request(app)
@@ -443,65 +464,6 @@ function timeout(ms) {
 
 // add test for update to the same data
 
-describe('publish-data', async() => {
-  it('should create users including instructor and publish data', async() => {
-    const user1 = generateUser(); //instructor
-    const user2 = generateUser();
-    const user3 = generateUser();
-    const data = {
-      coffee: `mocha-${uniqid()}`
-    };
-
-    const tokens = [];
-
-    for (const user of [user1, user2, user3]) {
-      await request(app)
-        .post('/v1/user/register')
-        .set('Content-Type', 'application/json')
-        .send(user.username === user1.username ? addRoleInstructor(user): addRole(user))
-        .expect(200);
-
-      const {body: {token}} = await request(app)
-        .post('/v1/user/login')
-        .set('Content-Type', 'application/json')
-        .send(user)
-        .expect(200);
-
-      tokens.push(token);
-    }
-
-    const [token1, token2, token3] = tokens;
-
-    const {body: {globalUniqueID}} = await request(app)
-      .post('/v1/fs/publish')
-      .set('Content-Type', 'application/json')
-      .set('Authorization', `Bearer ${token1}`)
-      .send(data)
-      .expect(200);
-
-    const resGet1 = await request(app)
-      .get(`/v1/fs/${globalUniqueID}`)
-      .set('Content-Type', 'application/json')
-      .set('Authorization', `Bearer ${token1}`)
-      .expect(200);
-    assert.deepEqual(resGet1.body.coffee, data.coffee);
-
-    const resGet2 = await request(app)
-      .get(`/v1/fs`)
-      .set('Content-Type', 'application/json')
-      .set('Authorization', `Bearer ${token2}`)
-      .expect(200);
-    assert.deepEqual(resGet2.body[0].data.coffee, data.coffee);
-
-    const resGet3 = await request(app)
-      .get(`/v1/fs`)
-      .set('Content-Type', 'application/json')
-      .set('Authorization', `Bearer ${token3}`)
-      .expect(200);
-    assert.deepEqual(resGet3.body[0].data.coffee, data.coffee);
-  });
-});
-
 describe('grant-revoke', async() => {
   it('should grant, revoke, and show access', async() => {
     const user1 = generateUser();
@@ -595,6 +557,130 @@ describe('grant-revoke', async() => {
   // it('should not revoke access that has not been granted', async() => {});
   // it('should not let owner revoke access of the owner', async() => {});
   // it('should not let other users revoke access of the owner', async() => {});
+});
+
+describe('publish-data', async() => {
+  beforeEach(async() => {
+    await mongodb.deleteDocuments();
+  });
+
+  it('should create users including instructor and publish data', async() => {
+    const user1 = generateUser(); //instructor
+    const user2 = generateUser();
+    const user3 = generateUser();
+    const data1 = {
+      coffee: `mocha-${uniqid()}`
+    };
+
+    const tokens = [];
+
+    for (const user of [user1, user2, user3]) {
+      await request(app)
+        .post('/v1/user/register')
+        .set('Content-Type', 'application/json')
+        .send(user.username === user1.username ? addRoleInstructor(user): addRole(user))
+        .expect(200);
+
+      const {body: {token}} = await request(app)
+        .post('/v1/user/login')
+        .set('Content-Type', 'application/json')
+        .send(user)
+        .expect(200);
+
+      tokens.push(token);
+    }
+
+    const [token1, token2, token3] = tokens;
+
+    const {body: {globalUniqueID}} = await request(app)
+      .post('/v1/fs/publish')
+      .set('Content-Type', 'application/json')
+      .set('Authorization', `Bearer ${token1}`)
+      .send(data1)
+      .expect(200);
+
+    const resGet1 = await request(app)
+      .get(`/v1/fs/${globalUniqueID}`)
+      .set('Content-Type', 'application/json')
+      .set('Authorization', `Bearer ${token1}`)
+      .expect(200);
+    assert.deepEqual(resGet1.body.coffee, data1.coffee);
+
+    const resGet2 = await request(app)
+      .get(`/v1/fs`)
+      .set('Content-Type', 'application/json')
+      .set('Authorization', `Bearer ${token2}`)
+      .expect(200);
+    assert.deepEqual(resGet2.body[0].data.coffee, data1.coffee);
+
+    const resGet3 = await request(app)
+      .get(`/v1/fs`)
+      .set('Content-Type', 'application/json')
+      .set('Authorization', `Bearer ${token3}`)
+      .expect(200);
+    assert.deepEqual(resGet3.body[0].data.coffee, data1.coffee);
+  });
+
+  it('should publish data and retrieve published data', async() => {
+    await mongodb.deleteDocuments();
+
+    const user1 = generateUser(); //instructor
+    const data1 = {
+      coffee: `mocha`
+    };
+    const data2 = {
+      coffee: `latte`
+    };
+    const data3 = {
+      coffee: `cappu`
+    };
+
+    for (const user of [user1, generateUser(), generateUser(), generateUser()]) {
+      await request(app)
+        .post('/v1/user/register')
+        .set('Content-Type', 'application/json')
+        .send(user.username === user1.username ? addRoleInstructor(user): addRole(user))
+        .expect(200);
+    }
+
+    const {body: {token}} = await request(app)
+      .post('/v1/user/login')
+      .set('Content-Type', 'application/json')
+      .send(user1)
+      .expect(200);
+
+    for (const data of [data1, data2, data3]) {
+      await request(app)
+        .post('/v1/fs/publish')
+        .set('Content-Type', 'application/json')
+        .set('Authorization', `Bearer ${token}`)
+        .send(data)
+        .expect(200);
+    }
+
+    const resGetPublished = await request(app)
+      .get(`/v1/fs/published`)
+      .set('Content-Type', 'application/json')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+
+    // latest first
+    assert.deepEqual(resGetPublished.body[0].source.data.coffee, data3.coffee);
+    assert.deepEqual(resGetPublished.body[1].source.data.coffee, data2.coffee);
+    assert.deepEqual(resGetPublished.body[2].source.data.coffee, data1.coffee);
+
+    assert.deepEqual(resGetPublished.body[0].published[0].data.coffee, data3.coffee);
+    assert.deepEqual(resGetPublished.body[0].published[1].data.coffee, data3.coffee);
+    assert.deepEqual(resGetPublished.body[0].published[2].data.coffee, data3.coffee);
+
+    assert.deepEqual(resGetPublished.body[1].published[0].data.coffee, data2.coffee);
+    assert.deepEqual(resGetPublished.body[1].published[1].data.coffee, data2.coffee);
+    assert.deepEqual(resGetPublished.body[1].published[2].data.coffee, data2.coffee);
+
+    assert.deepEqual(resGetPublished.body[2].published[0].data.coffee, data1.coffee);
+    assert.deepEqual(resGetPublished.body[2].published[1].data.coffee, data1.coffee);
+    assert.deepEqual(resGetPublished.body[2].published[2].data.coffee, data1.coffee);
+  });
 });
 
 // describe('devtest', async() => {

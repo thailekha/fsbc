@@ -91,7 +91,7 @@ FilesystemController.postData = async function(username, data) {
     firstVersion: guid,
     sourceOfPublish: guid
   });
-  return { globalUniqueID: guid};
+  return { globalUniqueID: guid };
 };
 
 FilesystemController.getData = async function(guid, username) {
@@ -136,10 +136,15 @@ FilesystemController.putData = async function(guid, username, data) {
 // Advanced
 // ############################
 
-FilesystemController.getAllData = async function(username) {
+function organizeToLatestAssets(username, assets) {
   var latestAssets = {};
-  (await mongodb.getAllDataAssets())
-    .filter(a => a.owner === username || a.authorizedUsers.includes(username))
+  assets
+    .filter(a => {
+      if (username) {
+        return a.owner === username || a.authorizedUsers.includes(username);
+      }
+      return true;
+    })
     .forEach(a => {
       if (!latestAssets[a.firstVersion] || latestAssets[a.firstVersion].lastChangedAt < a.lastChangedAt) {
         latestAssets[a.firstVersion] = a;
@@ -147,21 +152,25 @@ FilesystemController.getAllData = async function(username) {
     });
   latestAssets = Object
     .values(latestAssets)
-    .filter(a => validAccess(a, username));
+    .filter(a => {
+      if (username) {
+        return validAccess(a, username);
+      }
+      return true;
+    });
   // change lastChangedAt schema to int?
   latestAssets.sort((x,y) => x.lastChangedAt < y.lastChangedAt);
-
-  // const latestAssets = [];
-  // for (const asset of dataAssets) {
-  //   const latest = await this.getLatestDataAsset(asset, username);
-  //   if (latest && latestAssets.findIndex(i => i.guid === latest.guid) < 0) {
-  //     latestAssets.push(latest);
-  //   }
-  // }
-  // latestAssets.sort((x,y) => x.lastChangedAt < y.lastChangedAt);
-
   const dates = {};
   latestAssets.forEach(a => dates[a.guid] = a.lastChangedAt);
+
+  if (latestAssets.length !== Object.entries(dates).length) {
+    throw utils.constructError(`Failed to process latest data assets`, statusCodes.INTERNAL_SERVER_ERROR);
+  }
+  return {latestAssets, dates};
+}
+
+FilesystemController.getAllData = async function(username) {
+  const {latestAssets, dates} = organizeToLatestAssets(username, await mongodb.getAllDataAssets());
   const lastestDatas = await mongodb.getDatas(latestAssets.map(d => d.guid));
   lastestDatas.sort((x,y) => dates[x.guid] < dates[y.guid]);
 
@@ -170,18 +179,6 @@ FilesystemController.getAllData = async function(username) {
 
 //need to check authorization at each version?
 FilesystemController.getLatestDataAsset = async function(currentDataAsset, username) {
-  // // in case of loop
-  // const checked = new Set([]);
-  // let latestDataAsset;
-
-  // var requestedData = [currentDataAsset];
-  // while (requestedData.length === 1 && !checked.has(requestedData[0].guid)) {
-  //   checked.add(requestedData[0].guid);
-  //   latestDataAsset = requestedData[0];
-  //   requestedData = await mongodb.getNewerVersionOfDataAsset(latestDataAsset.guid);
-  //   requestedData = requestedData ? [requestedData] : [];
-  // }
-
   const sameFirstVersionAssets = (await mongodb.getDataAssetByFirstVersion(currentDataAsset.firstVersion))
     .filter(a => a.owner === username || a.authorizedUsers.includes(username));
   var latestAsset = sameFirstVersionAssets[0];
@@ -207,6 +204,74 @@ FilesystemController.getLatestData = async function(guid, username) {
 
   const data = await this.getData(latestGlobalUniqueID, username);
   return { guid: latestGlobalUniqueID, data };
+};
+
+FilesystemController.getLatestData = async function(guid, username) {
+  const dataAsset = await mongodb.getDataAsset(guid);
+  dataAssetExists(dataAsset);
+
+  var latestGlobalUniqueID = (await this.getLatestDataAsset(dataAsset, username)).guid;
+  if (!latestGlobalUniqueID) {
+    //already latest
+    latestGlobalUniqueID = guid;
+  }
+
+  const data = await this.getData(latestGlobalUniqueID, username);
+  return { guid: latestGlobalUniqueID, data };
+};
+
+FilesystemController.getPublished = async function(username) {
+  if ((await mongodb.getUser(username)).role !== 'INSTRUCTOR') {
+    throw utils.constructError(`You are not authorized get published data`, statusCodes.UNAUTHORIZED);
+  }
+
+  const otherAssets = [];
+  const sources = (await mongodb.getAllDataAssets())
+    .reduce((arr, a) => {
+      if (a.owner === username
+        && a.guid === a.firstVersion
+        && a.guid === a.sourceOfPublish) {
+        arr.push(a);
+        // sourceGuidsDates[a.guid] = a.lastChangedAt;
+      } else {
+        otherAssets.push(a);
+      }
+      return arr;
+    }, []);
+  const { latestAssets: latestSources, dates: sourceGuidsDates } = organizeToLatestAssets(username, sources);
+  const sourceGuidsToPublishedAssets = latestSources.reduce((obj, a) =>  (obj[a.guid] = [], obj), {});
+
+  otherAssets
+    .forEach(a => {
+      if (Array.isArray(sourceGuidsToPublishedAssets[a.sourceOfPublish])) {
+        sourceGuidsToPublishedAssets[a.sourceOfPublish].push(a);
+      }
+    });
+
+  const sourceGuidsToLatestPublishedGuids = {};
+  var guidsToFetch = Object.keys(sourceGuidsToPublishedAssets);
+  for (const [sourceGuid, publishes] of Object.entries(sourceGuidsToPublishedAssets)) {
+    const {latestAssets, dates} = organizeToLatestAssets(null, publishes);
+    const latestGuids = latestAssets.map(a => a.guid);
+    guidsToFetch = guidsToFetch.concat(latestGuids);
+
+    sourceGuidsToLatestPublishedGuids[sourceGuid] = {latestGuids, dates};
+  }
+
+  const datas = (await mongodb.getDatas(Array.from(new Set(guidsToFetch))))
+    .reduce((obj,d)=> (obj[d.guid] = {guid: d.guid, data: decrypt(d.data)}, obj),{});
+
+  const res = [];
+  for (const [sourceGuid, {latestGuids, dates}] of Object.entries(sourceGuidsToLatestPublishedGuids)) {
+    latestGuids.sort((x,y) => dates[x.guid] < dates[y.guid]);
+    res.push({
+      source: datas[sourceGuid],
+      published: latestGuids.map(g => datas[g])
+    });
+  }
+
+  res.sort((x,y) => sourceGuidsDates[x.source.guid] < sourceGuidsDates[y.source.guid]);
+  return res;
 };
 
 async function processDataForPublish(datas, dataAssets, username, sourceOfPublish, data) {
