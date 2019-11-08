@@ -229,7 +229,6 @@ FilesystemController.getPublished = async function(username) {
   const sources = (await mongodb.getAllDataAssets())
     .reduce((arr, a) => {
       if (a.owner === username
-        && a.guid === a.firstVersion
         && a.guid === a.sourceOfPublish) {
         arr.push(a);
         // sourceGuidsDates[a.guid] = a.lastChangedAt;
