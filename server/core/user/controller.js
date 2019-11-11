@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const mongodb = require('../data/mongodb');
 const statusCodes = require('http-status-codes');
 const utils = require('../utils');
+const fsController = require('../filesystem/controller');
 
 const UserController = {};
 
@@ -32,6 +33,9 @@ UserController.register = async function(username, password, role) {
 
   try {
     await mongodb.postUser({username,hashedPassword,salt,role});
+    if (role !== 'INSTRUCTOR') {
+      await fsController.populatePublishedDataToNewUser(username);
+    }
   } catch (err) {
     throw utils.formatError(err.message, 'to be unique', 'Email already registered', statusCodes.CONFLICT, 'Cannot register');
   }

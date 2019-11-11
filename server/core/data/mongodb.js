@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const User = require('./mongodbSchemas/user');
 const DataAsset = require('./mongodbSchemas/dataAsset');
 const Data = require('./mongodbSchemas/data');
+const utils = require('../utils');
 
 let isConnected;
 
@@ -24,6 +25,7 @@ async function connectToDatabase() {
 MongoDBController.deleteDocuments = async function() {
   await connectToDatabase();
   if (mongoose.connection.host === '127.0.0.1') {
+    utils.logger.warn(`<DELETE-DOCUMENTS>`);
     await User.deleteMany({});
     await DataAsset.deleteMany({});
     await Data.deleteMany({});

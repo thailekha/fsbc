@@ -89,7 +89,7 @@ FilesystemController.postData = async function(username, data) {
     authorizedUsers: [],
     lastVersion: null,
     firstVersion: guid,
-    sourceOfPublish: guid
+    sourceOfPublish: null
   });
   return { globalUniqueID: guid };
 };
@@ -316,6 +316,60 @@ FilesystemController.publishData = async function(username, data) {
   await mongodb.postData(datas);
   await mongodb.postDataAsset(dataAssets);
   return { globalUniqueID: guidForInstructor };
+};
+
+function timeout(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function constructVersion(asset) {
+  const result = {
+    id: asset.guid,
+    lastChangedAt: asset.lastChangedAt,
+    lastChangedBy: asset.lastChangedBy
+  };
+
+  return JSON.parse(JSON.stringify(result));
+}
+
+FilesystemController.populatePublishedDataToNewUser = async function(username) {
+  const sources = (await mongodb.getAllDataAssets())
+    .filter(a => a.guid === a.sourceOfPublish);
+  if (sources.length === 0) {
+    return;
+  }
+  const {latestAssets: publishedAssetGuids, dates} = organizeToLatestAssets(null, sources);
+  const newDatas = [];
+  const newAssets = [];
+  const datas = (await mongodb.getDatas(publishedAssetGuids.map(a => a.guid)));
+  datas.sort((x,y) => dates[x.guid] > dates[y.guid]);
+  for (const d of datas) {
+    await timeout(1.5); //sleep milliseconds to ensure a unique guid
+    const data = decrypt(d.data);
+    data._dateAdded = (new Date()).getTime();
+    const encryptedData = encrypt(data);
+    const guid = hash(encryptedData);
+
+    newDatas.push({
+      guid,
+      data: encryptedData
+    });
+    newAssets.push({
+      guid,
+      originalName: '',
+      mimetype: 'application/json',
+      lastChangedAt: (new Date()).getTime(),
+      active: 1,
+      owner: username,
+      lastChangedBy: username,
+      authorizedUsers: [],
+      lastVersion: null,
+      firstVersion: guid,
+      sourceOfPublish: d.guid
+    });
+  }
+  await mongodb.postData(newDatas);
+  await mongodb.postDataAsset(newAssets);
 };
 
 function timeout(ms) {

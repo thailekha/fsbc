@@ -622,8 +622,6 @@ describe('publish-data', async() => {
   });
 
   it('should publish data and retrieve published data', async() => {
-    await mongodb.deleteDocuments();
-
     const user1 = generateUser(); //instructor
     const data1 = {
       coffee: `mocha`
@@ -680,6 +678,67 @@ describe('publish-data', async() => {
     assert.deepEqual(resGetPublished.body[2].published[0].data.coffee, data1.coffee);
     assert.deepEqual(resGetPublished.body[2].published[1].data.coffee, data1.coffee);
     assert.deepEqual(resGetPublished.body[2].published[2].data.coffee, data1.coffee);
+  });
+
+  it('should populate published data for new user', async() => {
+    const user1 = generateUser(); //instructor
+    const user2 = generateUser();
+    const data1 = {
+      coffee: `mocha`
+    };
+    const data2 = {
+      coffee: `latte`
+    };
+    const data3 = {
+      coffee: `cappu`
+    };
+
+    await request(app)
+      .post('/v1/user/register')
+      .set('Content-Type', 'application/json')
+      .send(addRoleInstructor(user1))
+      .expect(200);
+
+    const {body: {token: token1}} = await request(app)
+      .post('/v1/user/login')
+      .set('Content-Type', 'application/json')
+      .send(user1)
+      .expect(200);
+
+    for (const data of [data1, data2, data3]) {
+      await request(app)
+        .post('/v1/fs/publish')
+        .set('Content-Type', 'application/json')
+        .set('Authorization', `Bearer ${token1}`)
+        .send(data)
+        .expect(200);
+    }
+
+    await request(app)
+      .post('/v1/user/register')
+      .set('Content-Type', 'application/json')
+      .send(addRole(user2))
+      .expect(200);
+
+    const {body: {token: token2}} = await request(app)
+      .post('/v1/user/login')
+      .set('Content-Type', 'application/json')
+      .send(user2)
+      .expect(200);
+
+    const resGetAll = await request(app)
+      .get(`/v1/fs`)
+      .set('Content-Type', 'application/json')
+      .set('Authorization', `Bearer ${token2}`)
+      .expect(200);
+
+    assert.equal(resGetAll.body.length, 3);
+    assert.deepEqual(resGetAll.body[0].data.coffee, data3.coffee);
+    assert.deepEqual(resGetAll.body[1].data.coffee, data2.coffee);
+    assert.deepEqual(resGetAll.body[2].data.coffee, data1.coffee);
+  });
+  after(async() => {
+    await mongodb.deleteDocuments();
   });
 });
 
