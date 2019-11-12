@@ -1,11 +1,12 @@
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 // const blockchainController = require('../blockchain/controller');
-const mongodb = require('../data/mongodb');
+const MongoDBController = require('../data/mongodb');
 const statusCodes = require('http-status-codes');
 const utils = require('../utils');
 const fsController = require('../filesystem/controller');
 
+const mongodb = new MongoDBController(process.env.LOCAL_DB ? null : process.env.ATLAS_CREDS);
 const UserController = {};
 
 function genRandomString(length) {

@@ -1,5 +1,5 @@
 // const ipfs = require('./ipfs');
-const mongodb = require('./mongodb');
+const MongoDBController = require('./mongodb');
 
 function constructController(storageMedium) {
   const StorageController = {};
@@ -9,4 +9,4 @@ function constructController(storageMedium) {
   return StorageController;
 }
 
-module.exports = constructController(mongodb);
+module.exports = constructController(new MongoDBController(process.env.LOCAL_DB ? null : process.env.ATLAS_CREDS));

@@ -4,133 +4,137 @@ const DataAsset = require('./mongodbSchemas/dataAsset');
 const Data = require('./mongodbSchemas/data');
 const utils = require('../utils');
 
-let isConnected;
-
-const MongoDBController = {};
-
-async function connectToDatabase() {
-  if (isConnected) {
-    return;
+class MongoDBController {
+  constructor(creds) {
+    this.uri = creds ?
+      `mongodb+srv://${creds}?retryWrites=true` : 'mongodb://127.0.0.1:27017/test';
+    this.isConnected = null;
   }
 
-  const db = await mongoose.connect(`mongodb+srv://${process.env.ATLAS_CREDS}?retryWrites=true`, { useNewUrlParser: true, useFindAndModify: false, useCreateIndex: true });
-  // const db = await mongoose.connect(`mongodb://127.0.0.1:27017/test`, { useNewUrlParser: true, useFindAndModify: false, useCreateIndex: true });
-  isConnected = db.connections[0].readyState;
+  async connectToDatabase() {
+    if (this.isConnected) {
+      return;
+    }
+    const db = await mongoose.connect(this.uri, { useNewUrlParser: true, useFindAndModify: false, useCreateIndex: true });
+    this.isConnected = db.connections[0].readyState;
+  }
+
+  // ############################
+  // For testing
+  // ############################
+
+  async deleteDocuments() {
+    await this.connectToDatabase();
+    if (mongoose.connection.host === '127.0.0.1') {
+      utils.logger.warn(`<DELETE-DOCUMENTS>`);
+      await User.deleteMany({});
+      await DataAsset.deleteMany({});
+      await Data.deleteMany({});
+      return;
+    }
+    utils.logger.warn(`<DELETE-DOCUMENTS> did NOT run`);
+  }
+
+  // ############################
+  // User
+  // ############################
+
+  async postUser(data) {
+    await this.connectToDatabase();
+    await User.create(data);
+  }
+
+  async addOrUpdateParticipant(data) {
+    await this.connectToDatabase();
+    const {username} = data;
+    await User.findOneAndUpdate({username}, data, {upsert: true});
+  }
+
+  async getUser(username) {
+    await this.connectToDatabase();
+    return await User.findOne({username});
+  }
+
+  async getUsers() {
+    await this.connectToDatabase();
+    return await User.find();
+  }
+
+  async hasInstructor() {
+    await this.connectToDatabase();
+    return await User.find({role: 'INSTRUCTOR'});
+  }
+
+  // ############################
+  // Data asset
+  // (Update using get and save instead of findOneAndUpdate)
+  // ############################
+
+  /**
+   * @param data: both object and array are supported by  mongoose
+   */
+  async postDataAsset(data) {
+    await this.connectToDatabase();
+    await DataAsset.create(data);
+  }
+
+  async getDataAsset(guid) {
+    await this.connectToDatabase();
+    const res = await DataAsset.findOne({guid});
+    return res;
+  }
+
+  async getDataAssetByFirstVersion(firstVersion) {
+    await this.connectToDatabase();
+    const res = await DataAsset.find({firstVersion}).lean();
+    return res;
+  }
+
+  // async putDataAsset(guid, data) {
+  //   await this.connectToDatabase();
+  //   const res = await DataAsset.findOne({guid});
+  //   for (const [key, value] of Object.entries(data)) {
+  //     res[key] = value;
+  //   }
+  //   await res.save();
+  // };
+
+  async getAllDataAssets() {
+    await this.connectToDatabase();
+    const res = await DataAsset.find().lean();
+    return res;
+  }
+
+  async getNewerVersionOfDataAsset(lastVersion) {
+    await this.connectToDatabase();
+    const res = await DataAsset.findOne({lastVersion}).lean();
+    return res;
+  }
+
+  // ############################
+  // Data
+  // ############################
+
+  /**
+   * @param data: both object and array are supported by  mongoose
+   */
+  async postData(data) {
+    await this.connectToDatabase();
+    await Data.create(data);
+  }
+
+  async getData(guid) {
+    await this.connectToDatabase();
+    return await Data.findOne({guid}).lean();
+  }
+
+  async getDatas(guids) {
+    await this.connectToDatabase();
+    const res = await Data.find({
+      'guid': { $in: guids}
+    }).lean();
+    return res;
+  }
 }
-
-// ############################
-// For testing
-// ############################
-
-MongoDBController.deleteDocuments = async function() {
-  await connectToDatabase();
-  if (mongoose.connection.host === '127.0.0.1') {
-    utils.logger.warn(`<DELETE-DOCUMENTS>`);
-    await User.deleteMany({});
-    await DataAsset.deleteMany({});
-    await Data.deleteMany({});
-  }
-};
-
-// ############################
-// User
-// ############################
-
-MongoDBController.postUser = async function(data) {
-  await connectToDatabase();
-  await User.create(data);
-};
-
-MongoDBController.addOrUpdateParticipant = async function(data) {
-  await connectToDatabase();
-  const {username} = data;
-  await User.findOneAndUpdate({username}, data, {upsert: true});
-};
-
-MongoDBController.getUser = async function(username) {
-  await connectToDatabase();
-  return await User.findOne({username});
-};
-
-MongoDBController.getUsers = async function() {
-  await connectToDatabase();
-  return await User.find();
-};
-
-MongoDBController.hasInstructor = async function() {
-  await connectToDatabase();
-  return await User.find({role: 'INSTRUCTOR'});
-};
-
-// ############################
-// Data asset
-// (Update using get and save instead of findOneAndUpdate)
-// ############################
-
-/**
- * @param data: both object and array are supported by  mongoose
- */
-MongoDBController.postDataAsset = async function(data) {
-  await connectToDatabase();
-  await DataAsset.create(data);
-};
-
-MongoDBController.getDataAsset = async function(guid) {
-  await connectToDatabase();
-  const res = await DataAsset.findOne({guid});
-  return res;
-};
-
-MongoDBController.getDataAssetByFirstVersion = async function(firstVersion) {
-  await connectToDatabase();
-  const res = await DataAsset.find({firstVersion}).lean();
-  return res;
-};
-
-// MongoDBController.putDataAsset = async function(guid, data) {
-//   await connectToDatabase();
-//   const res = await DataAsset.findOne({guid});
-//   for (const [key, value] of Object.entries(data)) {
-//     res[key] = value;
-//   }
-//   await res.save();
-// };
-
-MongoDBController.getAllDataAssets = async function() {
-  await connectToDatabase();
-  const res = await DataAsset.find().lean();
-  return res;
-};
-
-MongoDBController.getNewerVersionOfDataAsset = async function(lastVersion) {
-  await connectToDatabase();
-  const res = await DataAsset.findOne({lastVersion}).lean();
-  return res;
-};
-
-// ############################
-// Data
-// ############################
-
-/**
- * @param data: both object and array are supported by  mongoose
- */
-MongoDBController.postData = async function(data) {
-  await connectToDatabase();
-  await Data.create(data);
-};
-
-MongoDBController.getData = async function(guid) {
-  await connectToDatabase();
-  return await Data.findOne({guid}).lean();
-};
-
-MongoDBController.getDatas = async function(guids) {
-  await connectToDatabase();
-  const res = await Data.find({
-    'guid': { $in: guids}
-  }).lean();
-  return res;
-};
 
 module.exports = MongoDBController;

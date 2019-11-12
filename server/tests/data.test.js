@@ -5,7 +5,9 @@ const app = require('../bin/www');
 const expect = chai.expect;
 const uniqid = require('uniqid');
 const statusCodes = require('http-status-codes');
-const mongodb = require('../core/data/mongodb');
+const MongoDBController = require('../core/data/mongodb');
+
+const mongodb = new MongoDBController(null);
 
 // const username = `test-${uniqid()}`;
 // const password = "123";

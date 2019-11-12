@@ -1,10 +1,25 @@
-const mongodb = require('../data/mongodb');
+const MongoDBController = require('../data/mongodb');
 const crypto = require('crypto');
 const hash = require('object-hash');
 const statusCodes = require('http-status-codes');
 const utils = require('../utils');
 
+const mongodb = new MongoDBController(process.env.LOCAL_DB ? null : process.env.ATLAS_CREDS);
 const FilesystemController = {};
+
+function timeout(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function constructVersion(asset) {
+  const result = {
+    id: asset.guid,
+    lastChangedAt: asset.lastChangedAt,
+    lastChangedBy: asset.lastChangedBy
+  };
+
+  return JSON.parse(JSON.stringify(result));
+}
 
 // ############################
 // Encryption
@@ -318,20 +333,6 @@ FilesystemController.publishData = async function(username, data) {
   return { globalUniqueID: guidForInstructor };
 };
 
-function timeout(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-function constructVersion(asset) {
-  const result = {
-    id: asset.guid,
-    lastChangedAt: asset.lastChangedAt,
-    lastChangedBy: asset.lastChangedBy
-  };
-
-  return JSON.parse(JSON.stringify(result));
-}
-
 FilesystemController.populatePublishedDataToNewUser = async function(username) {
   const sources = (await mongodb.getAllDataAssets())
     .filter(a => a.guid === a.sourceOfPublish);
@@ -371,20 +372,6 @@ FilesystemController.populatePublishedDataToNewUser = async function(username) {
   await mongodb.postData(newDatas);
   await mongodb.postDataAsset(newAssets);
 };
-
-function timeout(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-function constructVersion(asset) {
-  const result = {
-    id: asset.guid,
-    lastChangedAt: asset.lastChangedAt,
-    lastChangedBy: asset.lastChangedBy
-  };
-
-  return JSON.parse(JSON.stringify(result));
-}
 
 // Trace: retrieve only items that user has access to. only throws 403 if the requested id is unauthorized
 FilesystemController.trace = async function(guid, username) {
