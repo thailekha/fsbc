@@ -4,8 +4,8 @@ const jwt = require('jsonwebtoken');
 const MongoDBController = require('../data/mongodb');
 const statusCodes = require('http-status-codes');
 const utils = require('../utils');
-const fsController = require('../filesystem/controller');
 
+const fsController = require('../filesystem/controller')(new MongoDBController(process.env.LOCAL_DB ? null : process.env.ATLAS_CREDS));
 const mongodb = new MongoDBController(process.env.LOCAL_DB ? null : process.env.ATLAS_CREDS);
 const UserController = {};
 

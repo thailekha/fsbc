@@ -1,11 +1,11 @@
-const MongoDBController = require('../data/mongodb');
 const crypto = require('crypto');
 const hash = require('object-hash');
 const statusCodes = require('http-status-codes');
 const utils = require('../utils');
 
-const mongodb = new MongoDBController(process.env.LOCAL_DB ? null : process.env.ATLAS_CREDS);
+let mongodb;
 const FilesystemController = {};
+module.exports = db => (mongodb = db, FilesystemController);
 
 function timeout(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -466,5 +466,3 @@ FilesystemController.getAccessInfo = async function(guid, username) {
   dataAssetExists(dataAsset);
   return { grantedUsers: dataAsset.authorizedUsers };
 };
-
-module.exports = FilesystemController;

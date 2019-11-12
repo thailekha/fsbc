@@ -1,7 +1,9 @@
 const router = require('express').Router();
-const fsController = require('./controller');
 const validator = require('../../middlewares/joi-validate');
 const schemas = require('./schemas');
+const MongoDBController = require('../data/mongodb');
+
+const fsController = require('./controller')(new MongoDBController(process.env.LOCAL_DB ? null : process.env.ATLAS_CREDS));
 
 router.get('/', async(req, res, next) => {
   try {
