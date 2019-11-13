@@ -1,5 +1,6 @@
 const Utils = {};
 const chalk = require('chalk');
+const moment = require('moment');
 
 Utils.constructError = function(msg, code) {
   const err = new Error(msg);
@@ -35,5 +36,16 @@ Utils.logger = {
   warn: msg => console.log(chalk.bgYellow(`[FSBC-LOGGER] ${msg}`)),
   error: msg => console.log(chalk.bgRed(`[FSBC-LOGGER] ${msg}`))
 };
+
+Utils.prettyDate = function(unixTimestamp) {
+  return moment.unix(unixTimestamp).format("dddd, MMMM Do YYYY, h:mm:ss a");
+}
+
+Utils.durationToMinutes = function(duration) {
+  const toSeconds = duration / 1000;
+  const toMinutes = toSeconds / 60;
+  const rounded = Math.round(toMinutes * 100) / 100;
+  return rounded;
+}
 
 module.exports = Utils;

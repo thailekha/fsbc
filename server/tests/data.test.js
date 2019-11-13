@@ -6,6 +6,7 @@ const expect = chai.expect;
 const uniqid = require('uniqid');
 const statusCodes = require('http-status-codes');
 const MongoDBController = require('../core/data/mongodb');
+const utils = require('../core/utils');
 
 const mongodb = new MongoDBController(null);
 
@@ -934,18 +935,18 @@ describe('collector', async() => {
         "name": "project2",
         "csv": [
           ["student", "name", "estimatedHours", "notes", "estimatedStress", "regulatedStartDate", "regulatedEndDate", "startTime", "endTime", "duration", "stress"],
-          ["c@c.com", task2.name, task2.estimatedHours, task2.notes, task2.estimatedStress, task2.regulatedStartDate, task2.regulatedEndDate, task2_c.startTime, task2_c.endTime, task2_c.duration, task2_c.stress],
-          ["b@b.com", task2.name, task2.estimatedHours, task2.notes, task2.estimatedStress, task2.regulatedStartDate, task2.regulatedEndDate, task2_b.startTime, task2_b.endTime, task2_b.duration, task2_b.stress],
-          ["a@a.com", task2.name, task2.estimatedHours, task2.notes, task2.estimatedStress, task2.regulatedStartDate, task2.regulatedEndDate, task2_a.startTime, task2_a.endTime, task2_a.duration, task2_a.stress],
+          ["c@c.com", task2.name, task2.estimatedHours, task2.notes, task2.estimatedStress, utils.prettyDate(task2.regulatedStartDate), utils.prettyDate(task2.regulatedEndDate), utils.prettyDate(task2_c.startTime), utils.prettyDate(task2_c.endTime), utils.durationToMinutes(task2_c.duration), task2_c.stress],
+          ["b@b.com", task2.name, task2.estimatedHours, task2.notes, task2.estimatedStress, utils.prettyDate(task2.regulatedStartDate), utils.prettyDate(task2.regulatedEndDate), utils.prettyDate(task2_b.startTime), utils.prettyDate(task2_b.endTime), utils.durationToMinutes(task2_b.duration), task2_b.stress],
+          ["a@a.com", task2.name, task2.estimatedHours, task2.notes, task2.estimatedStress, utils.prettyDate(task2.regulatedStartDate), utils.prettyDate(task2.regulatedEndDate), utils.prettyDate(task2_a.startTime), utils.prettyDate(task2_a.endTime), utils.durationToMinutes(task2_a.duration), task2_a.stress],
         ]
       },
       {
         "name": "project1",
         "csv": [
           ["student", "name", "estimatedHours", "notes", "estimatedStress", "regulatedStartDate", "regulatedEndDate", "startTime", "endTime", "duration", "stress"],
-          ["c@c.com", task1.name, task1.estimatedHours, task1.notes, task1.estimatedStress, task1.regulatedStartDate, task1.regulatedEndDate, task1_c.startTime, task1_c.endTime, task1_c.duration, task1_c.stress],
-          ["b@b.com", task1.name, task1.estimatedHours, task1.notes, task1.estimatedStress, task1.regulatedStartDate, task1.regulatedEndDate, task1_b.startTime, task1_b.endTime, task1_b.duration, task1_b.stress],
-          ["a@a.com", task1.name, task1.estimatedHours, task1.notes, task1.estimatedStress, task1.regulatedStartDate, task1.regulatedEndDate, task1_a.startTime, task1_a.endTime, task1_a.duration, task1_a.stress],
+          ["c@c.com", task1.name, task1.estimatedHours, task1.notes, task1.estimatedStress, utils.prettyDate(task1.regulatedStartDate), utils.prettyDate(task1.regulatedEndDate), utils.prettyDate(task1_c.startTime), utils.prettyDate(task1_c.endTime), utils.durationToMinutes(task1_c.duration), task1_c.stress],
+          ["b@b.com", task1.name, task1.estimatedHours, task1.notes, task1.estimatedStress, utils.prettyDate(task1.regulatedStartDate), utils.prettyDate(task1.regulatedEndDate), utils.prettyDate(task1_b.startTime), utils.prettyDate(task1_b.endTime), utils.durationToMinutes(task1_b.duration), task1_b.stress],
+          ["a@a.com", task1.name, task1.estimatedHours, task1.notes, task1.estimatedStress, utils.prettyDate(task1.regulatedStartDate), utils.prettyDate(task1.regulatedEndDate), utils.prettyDate(task1_a.startTime), utils.prettyDate(task1_a.endTime), utils.durationToMinutes(task1_a.duration), task1_a.stress],
         ]
       }
     ];

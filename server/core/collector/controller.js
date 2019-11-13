@@ -1,5 +1,6 @@
 const fsController = require('../filesystem/controller');
 const MongoDBController = require('../data/mongodb');
+const utils = require('../utils');
 
 const CollectorController = {};
 
@@ -12,7 +13,7 @@ CollectorController.collectAll = async function(link) {
 
       const studentRows = published
         .map(({ owner, data: { startTime, endTime, duration, stress }}) =>
-          [ owner, name, estimatedHours, notes, estimatedStress, regulatedStartDate, regulatedEndDate, startTime, endTime, duration, stress ]);
+          [ owner, name, estimatedHours, notes, estimatedStress, utils.prettyDate(regulatedStartDate), utils.prettyDate(regulatedEndDate), utils.prettyDate(startTime), utils.prettyDate(endTime), utils.durationToMinutes(duration), stress ]);
 
       return {
         name,
