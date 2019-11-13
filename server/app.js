@@ -14,6 +14,7 @@ require('dotenv').config();
 const jwtAuthenticate = require('./middlewares/jwt-authenticate');
 const userRouter = require('./core/user');
 const fsRouter = require('./core/filesystem');
+const collectorRouter = require('./core/collector');
 const errorHandler = require('./middlewares/error-handler');
 
 var app = express();
@@ -28,6 +29,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/ping', (req, res) => res.send('Pong'));
 app.use('/v1/user', userRouter);
+app.use('/v1/collector', collectorRouter);
 app.use(jwtAuthenticate({ secret: 'secret' }));
 app.use('/v1/fs', fsRouter);
 app.use(errorHandler);

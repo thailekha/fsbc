@@ -151,7 +151,7 @@ FilesystemController.putData = async function(guid, username, data) {
 // Advanced
 // ############################
 
-function organizeToLatestAssets(username, assets) {
+FilesystemController.organizeToLatestAssets = function(username, assets) {
   var latestAssets = {};
   assets
     .filter(a => {
@@ -182,10 +182,10 @@ function organizeToLatestAssets(username, assets) {
     throw utils.constructError(`Failed to process latest data assets`, statusCodes.INTERNAL_SERVER_ERROR);
   }
   return {latestAssets, dates};
-}
+};
 
 FilesystemController.getAllData = async function(username) {
-  const {latestAssets, dates} = organizeToLatestAssets(username, await mongodb.getAllDataAssets());
+  const {latestAssets, dates} = this.organizeToLatestAssets(username, await mongodb.getAllDataAssets());
   const lastestDatas = await mongodb.getDatas(latestAssets.map(d => d.guid));
   lastestDatas.sort((x,y) => dates[x.guid] < dates[y.guid]);
 
@@ -236,23 +236,25 @@ FilesystemController.getLatestData = async function(guid, username) {
 };
 
 FilesystemController.getPublished = async function(username) {
-  if ((await mongodb.getUser(username)).role !== 'INSTRUCTOR') {
-    throw utils.constructError(`You are not authorized get published data`, statusCodes.UNAUTHORIZED);
+  if (username) {
+    const claimedUser = await mongodb.getUser(username);
+    if (claimedUser.role !== 'INSTRUCTOR') {
+      throw utils.constructError(`You are not authorized get published data`, statusCodes.UNAUTHORIZED);
+    }
   }
 
-  const otherAssets = [];
-  const sources = (await mongodb.getAllDataAssets())
-    .reduce((arr, a) => {
-      if (a.owner === username
-        && a.guid === a.sourceOfPublish) {
-        arr.push(a);
-        // sourceGuidsDates[a.guid] = a.lastChangedAt;
+  const {sources, otherAssets} = (await mongodb.getAllDataAssets())
+    .reduce(({sources, otherAssets}, a) => {
+      const validOwnerOrAll = (username && a.owner === username) || !username;
+      const isSource = a.sourceOfPublish && a.guid === a.sourceOfPublish;
+      if (validOwnerOrAll && isSource) {
+        sources.push(a);
       } else {
         otherAssets.push(a);
       }
-      return arr;
-    }, []);
-  const { latestAssets: latestSources, dates: sourceGuidsDates } = organizeToLatestAssets(username, sources);
+      return {sources, otherAssets};
+    }, {sources: [], otherAssets: []});
+  const { latestAssets: latestSources, dates: sourceGuidsDates } = this.organizeToLatestAssets(username, sources);
   const sourceGuidsToPublishedAssets = latestSources.reduce((obj, a) =>  (obj[a.guid] = [], obj), {});
 
   otherAssets
@@ -264,16 +266,18 @@ FilesystemController.getPublished = async function(username) {
 
   const sourceGuidsToLatestPublishedGuids = {};
   var guidsToFetch = Object.keys(sourceGuidsToPublishedAssets);
+  const guidsToOwners = {};
   for (const [sourceGuid, publishes] of Object.entries(sourceGuidsToPublishedAssets)) {
-    const {latestAssets, dates} = organizeToLatestAssets(null, publishes);
+    const {latestAssets, dates} = this.organizeToLatestAssets(null, publishes);
     const latestGuids = latestAssets.map(a => a.guid);
     guidsToFetch = guidsToFetch.concat(latestGuids);
+    latestAssets.forEach(a => guidsToOwners[a.guid] = a.owner);
 
     sourceGuidsToLatestPublishedGuids[sourceGuid] = {latestGuids, dates};
   }
 
   const datas = (await mongodb.getDatas(Array.from(new Set(guidsToFetch))))
-    .reduce((obj,d)=> (obj[d.guid] = {guid: d.guid, data: decrypt(d.data)}, obj),{});
+    .reduce((obj,d)=> (obj[d.guid] = {guid: d.guid, data: decrypt(d.data), owner: guidsToOwners[d.guid]}, obj),{});
 
   const res = [];
   for (const [sourceGuid, {latestGuids, dates}] of Object.entries(sourceGuidsToLatestPublishedGuids)) {
@@ -339,7 +343,7 @@ FilesystemController.populatePublishedDataToNewUser = async function(username) {
   if (sources.length === 0) {
     return;
   }
-  const {latestAssets: publishedAssetGuids, dates} = organizeToLatestAssets(null, sources);
+  const {latestAssets: publishedAssetGuids, dates} = this.organizeToLatestAssets(null, sources);
   const newDatas = [];
   const newAssets = [];
   const datas = (await mongodb.getDatas(publishedAssetGuids.map(a => a.guid)));
