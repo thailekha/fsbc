@@ -59,7 +59,10 @@ UserController.login = async function(username, password) {
   if (sha512(password, claimedUser.salt) !== claimedUser.hashedPassword) {
     throw utils.constructError('Password is incorrect', statusCodes.BAD_REQUEST);
   }
-  return jwt.sign({ username: claimedUser.username }, 'secret', { expiresIn: '5h' });
+  return {
+    token: jwt.sign({ username: claimedUser.username }, 'secret', { expiresIn: '5h' }),
+    role: claimedUser.role
+  };
 };
 
 module.exports = UserController;

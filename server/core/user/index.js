@@ -14,8 +14,7 @@ router.post('/register', validator(schemas.register), async(req, res, next) => {
 
 router.post('/login', validator(schemas.login), async(req, res, next) => {
   try {
-    const token = await userController.login(req.body.username, req.body.password);
-    res.json({ token });
+    res.json(await userController.login(req.body.username, req.body.password));
   } catch (err) {
     next(err);
   }

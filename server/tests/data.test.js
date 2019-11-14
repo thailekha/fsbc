@@ -52,13 +52,15 @@ describe('user-management', function() {
       .set('Content-Type', 'application/json')
       .send(addRole(user))
       .expect(200);
-    const {body: {token}} = await request(app)
+    const {body: {token, role}} = await request(app)
       .post('/v1/user/login')
       .set('Content-Type', 'application/json')
       .send(user)
       .expect(200);
     assert.ok(token);
+    assert.ok(role);
     expect(token).to.have.lengthOf.above(0);
+    assert.equal(role, 'EXPORTER');
   });
   it('should not add duplicate user', async() => {
     const user = generateUser();
