@@ -826,7 +826,8 @@ describe('collector', async() => {
       "startTime": 1573598757175,
       "endTime": 1573598759195,
       "duration": 2020,
-      "stress": 5
+      "stress": 5,
+      "comments": "dunno"
     };
     const task2_a = {
       "name": "project2",
@@ -839,7 +840,8 @@ describe('collector', async() => {
       "startTime": 1573598737833,
       "endTime": 1573598741135,
       "duration": 3302,
-      "stress": 5
+      "stress": 5,
+      "comments": "dunno"
     };
     const task1_b = {
       "name": "project1",
@@ -852,7 +854,8 @@ describe('collector', async() => {
       "startTime": 1573598869835,
       "endTime": 1573598872999,
       "duration": 3164,
-      "stress": 5
+      "stress": 5,
+      "comments": "dunno"
     };
     const task2_b = {
       "name": "project2",
@@ -865,7 +868,8 @@ describe('collector', async() => {
       "startTime": 1573598857721,
       "endTime": 1573598859861,
       "duration": 2140,
-      "stress": 5
+      "stress": 5,
+      "comments": "dunno"
     };
     const task1_c = {
       "name": "project1",
@@ -878,7 +882,8 @@ describe('collector', async() => {
       "startTime": 1573599096654,
       "endTime": 1573599098625,
       "duration": 1971,
-      "stress": 5
+      "stress": 5,
+      "comments": "dunno"
     };
     const task2_c = {
       "name": "project2",
@@ -891,7 +896,8 @@ describe('collector', async() => {
       "startTime": 1573599085955,
       "endTime": 1573599088130,
       "duration": 2175,
-      "stress": 5
+      "stress": 5,
+      "comments": "dunno"
     };
 
     const doTask1 = [task1_a, task1_b, task1_c];
@@ -936,19 +942,19 @@ describe('collector', async() => {
       {
         "name": "project2",
         "csv": [
-          ["student", "name", "estimatedHours", "notes", "estimatedStress", "regulatedStartDate", "regulatedEndDate", "startTime", "endTime", "duration", "stress"],
-          ["c@c.com", task2.name, task2.estimatedHours, task2.notes, task2.estimatedStress, utils.prettyDate(task2.regulatedStartDate), utils.prettyDate(task2.regulatedEndDate), utils.prettyDate(task2_c.startTime), utils.prettyDate(task2_c.endTime), utils.durationToMinutes(task2_c.duration), task2_c.stress],
-          ["b@b.com", task2.name, task2.estimatedHours, task2.notes, task2.estimatedStress, utils.prettyDate(task2.regulatedStartDate), utils.prettyDate(task2.regulatedEndDate), utils.prettyDate(task2_b.startTime), utils.prettyDate(task2_b.endTime), utils.durationToMinutes(task2_b.duration), task2_b.stress],
-          ["a@a.com", task2.name, task2.estimatedHours, task2.notes, task2.estimatedStress, utils.prettyDate(task2.regulatedStartDate), utils.prettyDate(task2.regulatedEndDate), utils.prettyDate(task2_a.startTime), utils.prettyDate(task2_a.endTime), utils.durationToMinutes(task2_a.duration), task2_a.stress],
+          ["student", "name", "estimatedHours", "notes", "estimatedStress", "regulatedStartDate", "regulatedEndDate", "startTime", "endTime", "duration", "stress", "comments"],
+          ["c@c.com", task2.name, task2.estimatedHours, task2.notes, task2.estimatedStress, utils.prettyDate(task2.regulatedStartDate), utils.prettyDate(task2.regulatedEndDate), utils.prettyDate(task2_c.startTime), utils.prettyDate(task2_c.endTime), utils.durationToMinutes(task2_c.duration), task2_c.stress, task2_c.comments],
+          ["b@b.com", task2.name, task2.estimatedHours, task2.notes, task2.estimatedStress, utils.prettyDate(task2.regulatedStartDate), utils.prettyDate(task2.regulatedEndDate), utils.prettyDate(task2_b.startTime), utils.prettyDate(task2_b.endTime), utils.durationToMinutes(task2_b.duration), task2_b.stress, task2_b.comments],
+          ["a@a.com", task2.name, task2.estimatedHours, task2.notes, task2.estimatedStress, utils.prettyDate(task2.regulatedStartDate), utils.prettyDate(task2.regulatedEndDate), utils.prettyDate(task2_a.startTime), utils.prettyDate(task2_a.endTime), utils.durationToMinutes(task2_a.duration), task2_a.stress, task2_a.comments],
         ]
       },
       {
         "name": "project1",
         "csv": [
-          ["student", "name", "estimatedHours", "notes", "estimatedStress", "regulatedStartDate", "regulatedEndDate", "startTime", "endTime", "duration", "stress"],
-          ["c@c.com", task1.name, task1.estimatedHours, task1.notes, task1.estimatedStress, utils.prettyDate(task1.regulatedStartDate), utils.prettyDate(task1.regulatedEndDate), utils.prettyDate(task1_c.startTime), utils.prettyDate(task1_c.endTime), utils.durationToMinutes(task1_c.duration), task1_c.stress],
-          ["b@b.com", task1.name, task1.estimatedHours, task1.notes, task1.estimatedStress, utils.prettyDate(task1.regulatedStartDate), utils.prettyDate(task1.regulatedEndDate), utils.prettyDate(task1_b.startTime), utils.prettyDate(task1_b.endTime), utils.durationToMinutes(task1_b.duration), task1_b.stress],
-          ["a@a.com", task1.name, task1.estimatedHours, task1.notes, task1.estimatedStress, utils.prettyDate(task1.regulatedStartDate), utils.prettyDate(task1.regulatedEndDate), utils.prettyDate(task1_a.startTime), utils.prettyDate(task1_a.endTime), utils.durationToMinutes(task1_a.duration), task1_a.stress],
+          ["student", "name", "estimatedHours", "notes", "estimatedStress", "regulatedStartDate", "regulatedEndDate", "startTime", "endTime", "duration", "stress", "comments"],
+          ["c@c.com", task1.name, task1.estimatedHours, task1.notes, task1.estimatedStress, utils.prettyDate(task1.regulatedStartDate), utils.prettyDate(task1.regulatedEndDate), utils.prettyDate(task1_c.startTime), utils.prettyDate(task1_c.endTime), utils.durationToMinutes(task1_c.duration), task1_c.stress, task1_c.comments],
+          ["b@b.com", task1.name, task1.estimatedHours, task1.notes, task1.estimatedStress, utils.prettyDate(task1.regulatedStartDate), utils.prettyDate(task1.regulatedEndDate), utils.prettyDate(task1_b.startTime), utils.prettyDate(task1_b.endTime), utils.durationToMinutes(task1_b.duration), task1_b.stress, task1_b.comments],
+          ["a@a.com", task1.name, task1.estimatedHours, task1.notes, task1.estimatedStress, utils.prettyDate(task1.regulatedStartDate), utils.prettyDate(task1.regulatedEndDate), utils.prettyDate(task1_a.startTime), utils.prettyDate(task1_a.endTime), utils.durationToMinutes(task1_a.duration), task1_a.stress, task1_a.comments],
         ]
       }
     ];

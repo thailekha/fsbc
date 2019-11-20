@@ -12,12 +12,12 @@ CollectorController.collectAll = async function(link) {
       const { name, estimatedHours, notes, estimatedStress, regulatedStartDate, regulatedEndDate } = s;
 
       const studentRows = published
-        .map(({ owner, data: { startTime, endTime, duration, stress }}) =>
-          [ owner, name, estimatedHours, notes, estimatedStress, utils.prettyDate(regulatedStartDate), utils.prettyDate(regulatedEndDate), utils.prettyDate(startTime), utils.prettyDate(endTime), utils.durationToMinutes(duration), stress ]);
+        .map(({ owner, data: { startTime, endTime, duration, stress, comments }}) =>
+          [ owner, name, estimatedHours, notes, estimatedStress, utils.prettyDate(regulatedStartDate), utils.prettyDate(regulatedEndDate), utils.prettyDate(startTime), utils.prettyDate(endTime), utils.durationToMinutes(duration), stress, comments ]);
 
       return {
         name,
-        csv: [["student", "name", "estimatedHours", "notes", "estimatedStress", "regulatedStartDate", "regulatedEndDate", "startTime", "endTime", "duration", "stress"]]
+        csv: [["student", "name", "estimatedHours", "notes", "estimatedStress", "regulatedStartDate", "regulatedEndDate", "startTime", "endTime", "duration", "stress", "comments"]]
           .concat(studentRows)
       };
     });
