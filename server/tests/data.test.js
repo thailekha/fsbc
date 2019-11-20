@@ -16,7 +16,7 @@ const mongodb = new MongoDBController(null);
 
 function generateUser() {
   return {
-    username: `test@abc.com.${uniqid()}`,
+    username: `test${uniqid()}@usask.ca`,
     password: "123"
   };
 }
@@ -83,7 +83,7 @@ describe('user-management', function() {
       .set('Content-Type', 'application/json')
       .send(addRole(user))
       .expect(200);
-    user.username += 'wrong-email';
+    user.username = `wrong-email${user.username}`;
     const res = await request(app)
       .post('/v1/user/login')
       .set('Content-Type', 'application/json')
@@ -756,19 +756,19 @@ describe('collector', async() => {
   });
   it('3 students 1 data case', async() => {
     const instructor = {
-      username: 'i@i.com',
+      username: 'i@usask.ca',
       password: 'iii'
     };
     const user1 = {
-      username: 'a@a.com',
+      username: 'a@usask.ca',
       password: 'aaa'
     };
     const user2 = {
-      username: 'b@b.com',
+      username: 'b@usask.ca',
       password: 'bbb'
     };
     const user3 = {
-      username: 'c@c.com',
+      username: 'c@usask.ca',
       password: 'ccc'
     };
     const tokens = [];
@@ -943,18 +943,18 @@ describe('collector', async() => {
         "name": "project2",
         "csv": [
           ["student", "name", "estimatedHours", "notes", "estimatedStress", "regulatedStartDate", "regulatedEndDate", "startTime", "endTime", "duration", "stress", "comments"],
-          ["c@c.com", task2.name, task2.estimatedHours, task2.notes, task2.estimatedStress, utils.prettyDate(task2.regulatedStartDate), utils.prettyDate(task2.regulatedEndDate), utils.prettyDate(task2_c.startTime), utils.prettyDate(task2_c.endTime), utils.durationToMinutes(task2_c.duration), task2_c.stress, task2_c.comments],
-          ["b@b.com", task2.name, task2.estimatedHours, task2.notes, task2.estimatedStress, utils.prettyDate(task2.regulatedStartDate), utils.prettyDate(task2.regulatedEndDate), utils.prettyDate(task2_b.startTime), utils.prettyDate(task2_b.endTime), utils.durationToMinutes(task2_b.duration), task2_b.stress, task2_b.comments],
-          ["a@a.com", task2.name, task2.estimatedHours, task2.notes, task2.estimatedStress, utils.prettyDate(task2.regulatedStartDate), utils.prettyDate(task2.regulatedEndDate), utils.prettyDate(task2_a.startTime), utils.prettyDate(task2_a.endTime), utils.durationToMinutes(task2_a.duration), task2_a.stress, task2_a.comments],
+          ["c@usask.ca", task2.name, task2.estimatedHours, task2.notes, task2.estimatedStress, utils.prettyDate(task2.regulatedStartDate), utils.prettyDate(task2.regulatedEndDate), utils.prettyDate(task2_c.startTime), utils.prettyDate(task2_c.endTime), utils.durationToMinutes(task2_c.duration), task2_c.stress, task2_c.comments],
+          ["b@usask.ca", task2.name, task2.estimatedHours, task2.notes, task2.estimatedStress, utils.prettyDate(task2.regulatedStartDate), utils.prettyDate(task2.regulatedEndDate), utils.prettyDate(task2_b.startTime), utils.prettyDate(task2_b.endTime), utils.durationToMinutes(task2_b.duration), task2_b.stress, task2_b.comments],
+          ["a@usask.ca", task2.name, task2.estimatedHours, task2.notes, task2.estimatedStress, utils.prettyDate(task2.regulatedStartDate), utils.prettyDate(task2.regulatedEndDate), utils.prettyDate(task2_a.startTime), utils.prettyDate(task2_a.endTime), utils.durationToMinutes(task2_a.duration), task2_a.stress, task2_a.comments],
         ]
       },
       {
         "name": "project1",
         "csv": [
           ["student", "name", "estimatedHours", "notes", "estimatedStress", "regulatedStartDate", "regulatedEndDate", "startTime", "endTime", "duration", "stress", "comments"],
-          ["c@c.com", task1.name, task1.estimatedHours, task1.notes, task1.estimatedStress, utils.prettyDate(task1.regulatedStartDate), utils.prettyDate(task1.regulatedEndDate), utils.prettyDate(task1_c.startTime), utils.prettyDate(task1_c.endTime), utils.durationToMinutes(task1_c.duration), task1_c.stress, task1_c.comments],
-          ["b@b.com", task1.name, task1.estimatedHours, task1.notes, task1.estimatedStress, utils.prettyDate(task1.regulatedStartDate), utils.prettyDate(task1.regulatedEndDate), utils.prettyDate(task1_b.startTime), utils.prettyDate(task1_b.endTime), utils.durationToMinutes(task1_b.duration), task1_b.stress, task1_b.comments],
-          ["a@a.com", task1.name, task1.estimatedHours, task1.notes, task1.estimatedStress, utils.prettyDate(task1.regulatedStartDate), utils.prettyDate(task1.regulatedEndDate), utils.prettyDate(task1_a.startTime), utils.prettyDate(task1_a.endTime), utils.durationToMinutes(task1_a.duration), task1_a.stress, task1_a.comments],
+          ["c@usask.ca", task1.name, task1.estimatedHours, task1.notes, task1.estimatedStress, utils.prettyDate(task1.regulatedStartDate), utils.prettyDate(task1.regulatedEndDate), utils.prettyDate(task1_c.startTime), utils.prettyDate(task1_c.endTime), utils.durationToMinutes(task1_c.duration), task1_c.stress, task1_c.comments],
+          ["b@usask.ca", task1.name, task1.estimatedHours, task1.notes, task1.estimatedStress, utils.prettyDate(task1.regulatedStartDate), utils.prettyDate(task1.regulatedEndDate), utils.prettyDate(task1_b.startTime), utils.prettyDate(task1_b.endTime), utils.durationToMinutes(task1_b.duration), task1_b.stress, task1_b.comments],
+          ["a@usask.ca", task1.name, task1.estimatedHours, task1.notes, task1.estimatedStress, utils.prettyDate(task1.regulatedStartDate), utils.prettyDate(task1.regulatedEndDate), utils.prettyDate(task1_a.startTime), utils.prettyDate(task1_a.endTime), utils.durationToMinutes(task1_a.duration), task1_a.stress, task1_a.comments],
         ]
       }
     ];
