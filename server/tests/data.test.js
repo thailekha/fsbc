@@ -685,7 +685,7 @@ describe('publish-data', async() => {
     assert.deepEqual(resGetPublished.body[2].published[2].data.coffee, data1.coffee);
   });
 
-  it('should populate published data for new user', async() => {
+  it('should NOT populate published data for new user', async() => {
     const user1 = generateUser(); //instructor
     const user2 = generateUser();
     const data1 = {
@@ -737,10 +737,10 @@ describe('publish-data', async() => {
       .set('Authorization', `Bearer ${token2}`)
       .expect(200);
 
-    assert.equal(resGetAll.body.length, 3);
-    assert.deepEqual(resGetAll.body[0].data.coffee, data3.coffee);
-    assert.deepEqual(resGetAll.body[1].data.coffee, data2.coffee);
-    assert.deepEqual(resGetAll.body[2].data.coffee, data1.coffee);
+    assert.equal(resGetAll.body.length, 0);
+    // assert.deepEqual(resGetAll.body[0].data.coffee, data3.coffee);
+    // assert.deepEqual(resGetAll.body[1].data.coffee, data2.coffee);
+    // assert.deepEqual(resGetAll.body[2].data.coffee, data1.coffee);
   });
   after(async() => {
     await mongodb.deleteDocuments();
