@@ -38,7 +38,7 @@ Utils.logger = {
 };
 
 Utils.prettyDate = function(unixTimestamp) {
-  return moment.unix(unixTimestamp).format("dddd, MMMM Do YYYY, h:mm:ss a");
+  return moment(unixTimestamp).format("dddd, MMMM Do YYYY, h:mm:ss a");
 }
 
 Utils.durationToMinutes = function(duration) {

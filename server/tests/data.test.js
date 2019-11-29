@@ -942,19 +942,107 @@ describe('collector', async() => {
       {
         "name": "project2",
         "csv": [
-          ["student", "name", "estimatedHours", "notes", "estimatedStress", "regulatedStartDate", "regulatedEndDate", "startTime", "endTime", "duration", "stress", "comments"],
-          ["c@usask.ca", task2.name, task2.estimatedHours, task2.notes, task2.estimatedStress, utils.prettyDate(task2.regulatedStartDate), utils.prettyDate(task2.regulatedEndDate), utils.prettyDate(task2_c.startTime), utils.prettyDate(task2_c.endTime), utils.durationToMinutes(task2_c.duration), task2_c.stress, task2_c.comments],
-          ["b@usask.ca", task2.name, task2.estimatedHours, task2.notes, task2.estimatedStress, utils.prettyDate(task2.regulatedStartDate), utils.prettyDate(task2.regulatedEndDate), utils.prettyDate(task2_b.startTime), utils.prettyDate(task2_b.endTime), utils.durationToMinutes(task2_b.duration), task2_b.stress, task2_b.comments],
-          ["a@usask.ca", task2.name, task2.estimatedHours, task2.notes, task2.estimatedStress, utils.prettyDate(task2.regulatedStartDate), utils.prettyDate(task2.regulatedEndDate), utils.prettyDate(task2_a.startTime), utils.prettyDate(task2_a.endTime), utils.durationToMinutes(task2_a.duration), task2_a.stress, task2_a.comments],
+          ["Student", "Name", "Estimated Hours", "Notes", "Estimated Stress", "Regulated Start Date", "Regulated End Date", "Start Time", "End Time", "Duration", "Stress scores", "Mean Stress", "Comments"],
+          ["c@usask.ca", task2.name, task2.estimatedHours, task2.notes, task2.estimatedStress, utils.prettyDate(task2.regulatedStartDate), utils.prettyDate(task2.regulatedEndDate), utils.prettyDate(task2_c.startTime), utils.prettyDate(task2_c.endTime), utils.durationToMinutes(task2_c.duration), 'N/A', task2_c.stress, task2_c.comments],
+          ["b@usask.ca", task2.name, task2.estimatedHours, task2.notes, task2.estimatedStress, utils.prettyDate(task2.regulatedStartDate), utils.prettyDate(task2.regulatedEndDate), utils.prettyDate(task2_b.startTime), utils.prettyDate(task2_b.endTime), utils.durationToMinutes(task2_b.duration), 'N/A', task2_b.stress, task2_b.comments],
+          ["a@usask.ca", task2.name, task2.estimatedHours, task2.notes, task2.estimatedStress, utils.prettyDate(task2.regulatedStartDate), utils.prettyDate(task2.regulatedEndDate), utils.prettyDate(task2_a.startTime), utils.prettyDate(task2_a.endTime), utils.durationToMinutes(task2_a.duration), 'N/A', task2_a.stress, task2_a.comments],
         ]
       },
       {
         "name": "project1",
         "csv": [
-          ["student", "name", "estimatedHours", "notes", "estimatedStress", "regulatedStartDate", "regulatedEndDate", "startTime", "endTime", "duration", "stress", "comments"],
-          ["c@usask.ca", task1.name, task1.estimatedHours, task1.notes, task1.estimatedStress, utils.prettyDate(task1.regulatedStartDate), utils.prettyDate(task1.regulatedEndDate), utils.prettyDate(task1_c.startTime), utils.prettyDate(task1_c.endTime), utils.durationToMinutes(task1_c.duration), task1_c.stress, task1_c.comments],
-          ["b@usask.ca", task1.name, task1.estimatedHours, task1.notes, task1.estimatedStress, utils.prettyDate(task1.regulatedStartDate), utils.prettyDate(task1.regulatedEndDate), utils.prettyDate(task1_b.startTime), utils.prettyDate(task1_b.endTime), utils.durationToMinutes(task1_b.duration), task1_b.stress, task1_b.comments],
-          ["a@usask.ca", task1.name, task1.estimatedHours, task1.notes, task1.estimatedStress, utils.prettyDate(task1.regulatedStartDate), utils.prettyDate(task1.regulatedEndDate), utils.prettyDate(task1_a.startTime), utils.prettyDate(task1_a.endTime), utils.durationToMinutes(task1_a.duration), task1_a.stress, task1_a.comments],
+          ["Student", "Name", "Estimated Hours", "Notes", "Estimated Stress", "Regulated Start Date", "Regulated End Date", "Start Time", "End Time", "Duration", "Stress scores", "Mean Stress", "Comments"],
+          ["c@usask.ca", task1.name, task1.estimatedHours, task1.notes, task1.estimatedStress, utils.prettyDate(task1.regulatedStartDate), utils.prettyDate(task1.regulatedEndDate), utils.prettyDate(task1_c.startTime), utils.prettyDate(task1_c.endTime), utils.durationToMinutes(task1_c.duration), 'N/A', task1_c.stress, task1_c.comments],
+          ["b@usask.ca", task1.name, task1.estimatedHours, task1.notes, task1.estimatedStress, utils.prettyDate(task1.regulatedStartDate), utils.prettyDate(task1.regulatedEndDate), utils.prettyDate(task1_b.startTime), utils.prettyDate(task1_b.endTime), utils.durationToMinutes(task1_b.duration), 'N/A', task1_b.stress, task1_b.comments],
+          ["a@usask.ca", task1.name, task1.estimatedHours, task1.notes, task1.estimatedStress, utils.prettyDate(task1.regulatedStartDate), utils.prettyDate(task1.regulatedEndDate), utils.prettyDate(task1_a.startTime), utils.prettyDate(task1_a.endTime), utils.durationToMinutes(task1_a.duration), 'N/A', task1_a.stress, task1_a.comments],
+        ]
+      }
+    ];
+
+    assert.deepEqual(resSources.body, csvTables);
+  });
+  it('incomplete task', async() => {
+    const instructor = {
+      username: 'i@usask.ca',
+      password: 'iii'
+    };
+    const user1 = {
+      username: 'a@usask.ca',
+      password: 'aaa'
+    };
+    const tokens = [];
+    for (const user of [instructor, user1]) {
+      await request(app)
+        .post('/v1/user/register')
+        .set('Content-Type', 'application/json')
+        .send(user.username === instructor.username ? addRoleInstructor(user): addRole(user))
+        .expect(200);
+
+      const {body: {token}} = await request(app)
+        .post('/v1/user/login')
+        .set('Content-Type', 'application/json')
+        .send(user)
+        .expect(200);
+
+      tokens.push(token);
+    }
+    const [token1, token2] = tokens;
+    const task1 = {
+      "name": "project1",
+      "estimatedHours": "10",
+      "notes": "",
+      "estimatedStress": 5,
+      "regulatedStartDate": 1573581600000,
+      "regulatedEndDate": 1573668000000
+    };
+    await request(app)
+      .post('/v1/fs/publish')
+      .set('Content-Type', 'application/json')
+      .set('Authorization', `Bearer ${token1}`)
+      .send(task1)
+      .expect(200);
+
+    const task1_a = {
+      "name": "project1",
+      "estimatedHours": "10",
+      "notes": "",
+      "estimatedStress": 5,
+      "regulatedStartDate": 1573581600000,
+      "regulatedEndDate": 1573668000000,
+      "stresses": [0, 10],
+      "stress": 5,
+      "comments": ["dunno", "idk"]
+    };
+
+    const resGetAll = await request(app)
+      .get(`/v1/fs`)
+      .set('Content-Type', 'application/json')
+      .set('Authorization', `Bearer ${token2}`)
+      .expect(200);
+    assert.equal(resGetAll.body.length, 1);
+
+    const {guid} = resGetAll.body[0];
+    await request(app)
+      .put(`/v1/fs/${guid}`)
+      .set('Content-Type', 'application/json')
+      .set('Authorization', `Bearer ${token2}`)
+      .send(task1_a)
+      .expect(200);
+
+    const resSources = await request(app)
+      .post(`/v1/collector`)
+      .set('Content-Type', 'application/json')
+      .send({
+        link: '127.0.0.1:27017'
+      })
+      .expect(200);
+
+    const csvTables = [
+      {
+        "name": "project1",
+        "csv": [
+          ["Student", "Name", "Estimated Hours", "Notes", "Estimated Stress", "Regulated Start Date", "Regulated End Date", "Start Time", "End Time", "Duration", "Stress scores", "Mean Stress", "Comments"],
+          ["a@usask.ca", task1.name, task1.estimatedHours, task1.notes, task1.estimatedStress, utils.prettyDate(task1.regulatedStartDate), utils.prettyDate(task1.regulatedEndDate), "N/A", "N/A", "N/A", task1_a.stresses, task1_a.stress, task1_a.comments],
         ]
       }
     ];
