@@ -12,7 +12,7 @@ CollectorController.collectAll = async function(link) {
       const { name, estimatedHours, notes, estimatedStress, regulatedStartDate, regulatedEndDate } = s;
 
       const studentRows = published
-        .map(({ owner, data: { startTime, endTime, duration, stresses, stress, comments }}) =>
+        .map(({ owner, data: { startTime, endTime, duration, stresses, stress, comments, overallStress }}) =>
           [
             owner,
             name,
@@ -26,7 +26,8 @@ CollectorController.collectAll = async function(link) {
             duration ? utils.durationToMinutes(duration) : 'N/A',
             stresses ? stresses : 'N/A',
             stress ? stress : 'N/A',
-            comments ? comments : 'N/A'
+            comments ? comments : 'N/A',
+            overallStress ? overallStress : 'N/A'
           ]);
 
       return {
@@ -44,7 +45,8 @@ CollectorController.collectAll = async function(link) {
           "Duration",
           "Stress scores",
           "Mean Stress",
-          "Comments"
+          "Comments",
+          "Overall Stress"
         ]]
           .concat(studentRows)
       };
