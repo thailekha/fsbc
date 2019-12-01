@@ -7,7 +7,7 @@ const utils = require('../utils');
 class MongoDBController {
   constructor(creds) {
     this.uri = creds && !creds.includes('127.0.0.1') ?
-      `mongodb+srv://${creds}?retryWrites=true` : 'mongodb://127.0.0.1:27017/test';
+      `mongodb+srv://${creds}?retryWrites=true&w=majority` : 'mongodb://127.0.0.1:27017/test';
     this.isConnected = null;
   }
 
