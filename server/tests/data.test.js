@@ -7,50 +7,28 @@ const uniqid = require('uniqid');
 const statusCodes = require('http-status-codes');
 const MongoDBController = require('../core/data/mongodb');
 const utils = require('../core/utils');
+const testUtils = require('./testUtils');
 
 const mongodb = new MongoDBController(null);
-
-// const username = `test-${uniqid()}`;
-// const password = "123";
-// const role = "EXPORTER";
-
-function generateUser() {
-  return {
-    username: `test${uniqid()}@usask.ca`,
-    password: "123"
-  };
-}
-
-function addRole(user) {
-  const nUser = JSON.parse(JSON.stringify(user));
-  nUser.role = "EXPORTER";
-  return nUser;
-}
-
-function addRoleInstructor(user) {
-  const nUser = JSON.parse(JSON.stringify(user));
-  nUser.role = "INSTRUCTOR";
-  return nUser;
-}
 
 describe('user-management', function() {
   before(async() => {
     await mongodb.deleteDocuments();
   });
   it('should register', async() => {
-    const user = generateUser();
+    const user = testUtils.generateUser();
     await request(app)
       .post('/v1/user/register')
       .set('Content-Type', 'application/json')
-      .send(addRole(user))
+      .send(testUtils.addRole(user))
       .expect(200);
   });
   it('should login', async() => {
-    const user = generateUser();
+    const user = testUtils.generateUser();
     await request(app)
       .post('/v1/user/register')
       .set('Content-Type', 'application/json')
-      .send(addRole(user))
+      .send(testUtils.addRole(user))
       .expect(200);
     const {body: {token, role}} = await request(app)
       .post('/v1/user/login')
@@ -63,25 +41,25 @@ describe('user-management', function() {
     assert.equal(role, 'EXPORTER');
   });
   it('should not add duplicate user', async() => {
-    const user = generateUser();
+    const user = testUtils.generateUser();
     await request(app)
       .post('/v1/user/register')
       .set('Content-Type', 'application/json')
-      .send(addRole(user))
+      .send(testUtils.addRole(user))
       .expect(200);
     const res = await request(app)
       .post('/v1/user/register')
       .set('Content-Type', 'application/json')
-      .send(addRole(user))
+      .send(testUtils.addRole(user))
       .expect(statusCodes.CONFLICT);
     assert.equal(res.body.message, 'Email already registered');
   });
   it('should not allow user not exist login', async() => {
-    const user = generateUser();
+    const user = testUtils.generateUser();
     await request(app)
       .post('/v1/user/register')
       .set('Content-Type', 'application/json')
-      .send(addRole(user))
+      .send(testUtils.addRole(user))
       .expect(200);
     user.username = `wrong-email${user.username}`;
     const res = await request(app)
@@ -92,11 +70,11 @@ describe('user-management', function() {
     assert.equal(res.body.message, 'Email is incorrect');
   });
   it('should not allow wrong password login', async() => {
-    const user = generateUser();
+    const user = testUtils.generateUser();
     await request(app)
       .post('/v1/user/register')
       .set('Content-Type', 'application/json')
-      .send(addRole(user))
+      .send(testUtils.addRole(user))
       .expect(200);
     user.password += 'wrongpassword';
     const res = await request(app)
@@ -107,17 +85,17 @@ describe('user-management', function() {
     assert.equal(res.body.message, 'Password is incorrect');
   });
   it('should not allow two instructors', async() => {
-    const user1 = generateUser();
-    const user2 = generateUser();
+    const user1 = testUtils.generateUser();
+    const user2 = testUtils.generateUser();
     await request(app)
       .post('/v1/user/register')
       .set('Content-Type', 'application/json')
-      .send(addRoleInstructor(user1))
+      .send(testUtils.addRoleInstructor(user1))
       .expect(200);
     await request(app)
       .post('/v1/user/register')
       .set('Content-Type', 'application/json')
-      .send(addRoleInstructor(user2))
+      .send(testUtils.addRoleInstructor(user2))
       .expect(409);
   });
   after(async() => {
@@ -127,7 +105,7 @@ describe('user-management', function() {
 
 describe('get-data', async() => {
   it('should get data', async() => {
-    const user = generateUser();
+    const user = testUtils.generateUser();
 
     const data = {
       coffee: `mocha`
@@ -136,7 +114,7 @@ describe('get-data', async() => {
     await request(app)
       .post('/v1/user/register')
       .set('Content-Type', 'application/json')
-      .send(addRole(user))
+      .send(testUtils.addRole(user))
       .expect(200);
 
     const resLogin = await request(app)
@@ -162,11 +140,11 @@ describe('get-data', async() => {
   });
 
   it('should not get unexisting data', async() => {
-    const user = generateUser();
+    const user = testUtils.generateUser();
     await request(app)
       .post('/v1/user/register')
       .set('Content-Type', 'application/json')
-      .send(addRole(user))
+      .send(testUtils.addRole(user))
       .expect(200);
     const resLogin = await request(app)
       .post('/v1/user/login')
@@ -184,8 +162,8 @@ describe('get-data', async() => {
 
 describe('all-tasks', async() => {
   it('should register, login, post, get, put, get, trace, get-latest, grant', async() => {
-    const user1 = generateUser();
-    const user2 = generateUser();
+    const user1 = testUtils.generateUser();
+    const user2 = testUtils.generateUser();
     const data1 = {
       coffee: `mocha`
     };
@@ -196,7 +174,7 @@ describe('all-tasks', async() => {
     await request(app)
       .post('/v1/user/register')
       .set('Content-Type', 'application/json')
-      .send(addRole(user1))
+      .send(testUtils.addRole(user1))
       .expect(200);
 
     const resLogin1 = await request(app)
@@ -258,7 +236,7 @@ describe('all-tasks', async() => {
     await request(app)
       .post('/v1/user/register')
       .set('Content-Type', 'application/json')
-      .send(addRole(user2))
+      .send(testUtils.addRole(user2))
       .expect(200);
 
     const resLogin2 = await request(app)
@@ -293,7 +271,7 @@ describe('all-tasks', async() => {
 
 describe('get-latest', async() => {
   it('should post 2 data assets, and getAll data', async() => {
-    const user1 = generateUser();
+    const user1 = testUtils.generateUser();
 
     const data1 = {
       coffee: `mocha-${uniqid()}`
@@ -305,7 +283,7 @@ describe('get-latest', async() => {
     await request(app)
       .post('/v1/user/register')
       .set('Content-Type', 'application/json')
-      .send(addRole(user1))
+      .send(testUtils.addRole(user1))
       .expect(200);
 
     const resLogin1 = await request(app)
@@ -343,7 +321,7 @@ describe('get-latest', async() => {
   });
 
   it('should post 1 data asset, update it, get all data, only 1 asset should be returned', async() => {
-    const user = generateUser();
+    const user = testUtils.generateUser();
 
     const initialData = {
       coffee: `mocha-${uniqid()}`
@@ -355,7 +333,7 @@ describe('get-latest', async() => {
     await request(app)
       .post('/v1/user/register')
       .set('Content-Type', 'application/json')
-      .send(addRole(user))
+      .send(testUtils.addRole(user))
       .expect(200);
 
     const {body: {token}} = await request(app)
@@ -390,8 +368,8 @@ describe('get-latest', async() => {
   });
 
   it('should post 1 data asset, grant access, other user updates it, both users get all data should only get 1 asset', async() => {
-    const user1 = generateUser();
-    const user2 = generateUser();
+    const user1 = testUtils.generateUser();
+    const user2 = testUtils.generateUser();
 
     const initialData = {
       coffee: `mocha-${uniqid()}`
@@ -403,12 +381,12 @@ describe('get-latest', async() => {
     await request(app)
       .post('/v1/user/register')
       .set('Content-Type', 'application/json')
-      .send(addRole(user1))
+      .send(testUtils.addRole(user1))
       .expect(200);
     await request(app)
       .post('/v1/user/register')
       .set('Content-Type', 'application/json')
-      .send(addRole(user2))
+      .send(testUtils.addRole(user2))
       .expect(200);
 
     const {body: {token: token1}} = await request(app)
@@ -471,8 +449,8 @@ function timeout(ms) {
 
 describe('grant-revoke', async() => {
   it('should grant, revoke, and show access', async() => {
-    const user1 = generateUser();
-    const user2 = generateUser();
+    const user1 = testUtils.generateUser();
+    const user2 = testUtils.generateUser();
     const data = {
       coffee: `mocha-${uniqid()}`
     };
@@ -480,13 +458,13 @@ describe('grant-revoke', async() => {
     await request(app)
       .post('/v1/user/register')
       .set('Content-Type', 'application/json')
-      .send(addRole(user1))
+      .send(testUtils.addRole(user1))
       .expect(200);
 
     await request(app)
       .post('/v1/user/register')
       .set('Content-Type', 'application/json')
-      .send(addRole(user2))
+      .send(testUtils.addRole(user2))
       .expect(200);
 
     const {body: {token: token1}} = await request(app)
@@ -570,9 +548,9 @@ describe('publish-data', async() => {
   });
 
   it('should create users including instructor and publish data', async() => {
-    const user1 = generateUser(); //instructor
-    const user2 = generateUser();
-    const user3 = generateUser();
+    const user1 = testUtils.generateUser(); //instructor
+    const user2 = testUtils.generateUser();
+    const user3 = testUtils.generateUser();
     const data1 = {
       coffee: `mocha-${uniqid()}`
     };
@@ -583,7 +561,7 @@ describe('publish-data', async() => {
       await request(app)
         .post('/v1/user/register')
         .set('Content-Type', 'application/json')
-        .send(user.username === user1.username ? addRoleInstructor(user): addRole(user))
+        .send(user.username === user1.username ? testUtils.addRoleInstructor(user): testUtils.addRole(user))
         .expect(200);
 
       const {body: {token}} = await request(app)
@@ -627,7 +605,7 @@ describe('publish-data', async() => {
   });
 
   it('should publish data and retrieve published data', async() => {
-    const user1 = generateUser(); //instructor
+    const user1 = testUtils.generateUser(); //instructor
     const data1 = {
       coffee: `mocha`
     };
@@ -638,11 +616,11 @@ describe('publish-data', async() => {
       coffee: `cappu`
     };
 
-    for (const user of [user1, generateUser(), generateUser(), generateUser()]) {
+    for (const user of [user1, testUtils.generateUser(), testUtils.generateUser(), testUtils.generateUser()]) {
       await request(app)
         .post('/v1/user/register')
         .set('Content-Type', 'application/json')
-        .send(user.username === user1.username ? addRoleInstructor(user): addRole(user))
+        .send(user.username === user1.username ? testUtils.addRoleInstructor(user): testUtils.addRole(user))
         .expect(200);
     }
 
@@ -686,8 +664,8 @@ describe('publish-data', async() => {
   });
 
   it('should NOT populate published data for new user', async() => {
-    const user1 = generateUser(); //instructor
-    const user2 = generateUser();
+    const user1 = testUtils.generateUser(); //instructor
+    const user2 = testUtils.generateUser();
     const data1 = {
       coffee: `mocha`
     };
@@ -701,7 +679,7 @@ describe('publish-data', async() => {
     await request(app)
       .post('/v1/user/register')
       .set('Content-Type', 'application/json')
-      .send(addRoleInstructor(user1))
+      .send(testUtils.addRoleInstructor(user1))
       .expect(200);
 
     const {body: {token: token1}} = await request(app)
@@ -722,7 +700,7 @@ describe('publish-data', async() => {
     await request(app)
       .post('/v1/user/register')
       .set('Content-Type', 'application/json')
-      .send(addRole(user2))
+      .send(testUtils.addRole(user2))
       .expect(200);
 
     const {body: {token: token2}} = await request(app)
@@ -776,7 +754,7 @@ describe('collector', async() => {
       await request(app)
         .post('/v1/user/register')
         .set('Content-Type', 'application/json')
-        .send(user.username === instructor.username ? addRoleInstructor(user): addRole(user))
+        .send(user.username === instructor.username ? testUtils.addRoleInstructor(user) : testUtils.addRole(user))
         .expect(200);
 
       const {body: {token}} = await request(app)
@@ -981,7 +959,7 @@ describe('collector', async() => {
       await request(app)
         .post('/v1/user/register')
         .set('Content-Type', 'application/json')
-        .send(user.username === instructor.username ? addRoleInstructor(user): addRole(user))
+        .send(user.username === instructor.username ? testUtils.addRoleInstructor(user): testUtils.addRole(user))
         .expect(200);
 
       const {body: {token}} = await request(app)
