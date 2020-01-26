@@ -6,7 +6,7 @@ const schemas = require('./schemas');
 router.post('/register', validator(schemas.register), async(req, res, next) => {
   try {
     await userController.register(req.body.username, req.body.password, req.body.role);
-    res.end();
+    res.json(req.body.username);
   } catch (err) {
     next(err);
   }

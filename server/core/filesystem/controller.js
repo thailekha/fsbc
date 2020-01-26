@@ -32,7 +32,7 @@ if (!process.env.DATAENCRYPT_SECRET) {
 const ALGORITHM = 'aes-256-cbc';
 const PASSWORD = process.env.DATAENCRYPT_SECRET;
 
-const needJsonStringify = data => !(data instanceof Buffer) && (data instanceof Object);
+const needJsonStringify = data => !(data instanceof Buffer) && (data instanceof Object || typeof data === 'object');
 
 function encrypt(data) {
   const cipher = crypto.createCipher(ALGORITHM,PASSWORD);
