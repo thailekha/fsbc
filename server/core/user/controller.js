@@ -5,7 +5,7 @@ const MongoDBController = require('../data/mongodb');
 const statusCodes = require('http-status-codes');
 const utils = require('../utils');
 
-const mongodb = new MongoDBController(process.env.LOCAL_DB ? null : process.env.ATLAS_CREDS);
+const mongodb = new MongoDBController(process.env.ATLAS_CREDS);
 // const fsController = require('../filesystem/controller')(mongodb);
 
 const UserController = {};

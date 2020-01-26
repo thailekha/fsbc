@@ -9,7 +9,7 @@ const MongoDBController = require('../core/data/mongodb');
 const utils = require('../core/utils');
 const testUtils = require('./testUtils');
 
-const mongodb = new MongoDBController(null);
+const mongodb = new MongoDBController(process.env.ATLAS_CREDS);
 
 describe('user-management', function() {
   before(async() => {
@@ -918,7 +918,7 @@ describe('collector', async() => {
       .post(`/v1/collector`)
       .set('Content-Type', 'application/json')
       .send({
-        link: '127.0.0.1:27017'
+        link: 'mongodb://127.0.0.1:27017/test'
       })
       .expect(200);
 
@@ -1017,7 +1017,7 @@ describe('collector', async() => {
       .post(`/v1/collector`)
       .set('Content-Type', 'application/json')
       .send({
-        link: '127.0.0.1:27017'
+        link: 'mongodb://127.0.0.1:27017/test'
       })
       .expect(200);
 

@@ -29,9 +29,27 @@ vagrant ssh dev-machine
     cd /mnt/vagrant && make singlenode
 ```
 
-## Mongodb container
+# Mongodb container
 ```
 sudo docker run --rm -p 127.0.0.1:27017:27017 mongo
+```
+
+# Load test
+Make sure to use the load DB
+```
+# cd to /mnt/vagrant/server
+
+# terminal 1
+export NODE_PATH=~/fsbc/node_modules
+export ATLAS_CREDS=mongodb://127.0.0.1:27017/load
+npm run dev
+
+# terminal 2
+export NODE_PATH=~/fsbc/node_modules
+export ATLAS_CREDS=mongodb://127.0.0.1:27017/load && node ./tests/flushDevDB.js && node ./tests/load/stackServer.js
+
+# terminal 3
+k6 run ./tests/load/load.test.js
 ```
 
 # Deploy

@@ -5,9 +5,13 @@ const Data = require('./mongodbSchemas/data');
 const utils = require('../utils');
 
 class MongoDBController {
+  // Need to pass creds for collector endpoint
   constructor(creds) {
-    this.uri = creds && !creds.includes('127.0.0.1') ?
-      `mongodb+srv://${creds}?retryWrites=true&w=majority` : 'mongodb://127.0.0.1:27017/test';
+    if (!creds) {
+      throw new Error('Invalid DB creds');
+    }
+
+    this.uri = `${creds}?retryWrites=true&w=majority`;
     this.isConnected = null;
   }
 
