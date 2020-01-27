@@ -329,9 +329,11 @@ FilesystemController.publishData = async function(username, data) {
   const datas = [];
   const dataAssets = [];
   const guidForInstructor = await processDataForPublish(datas, dataAssets, username, null, data);
+  const publishPromises = [];
   for (const user of (await mongodb.getUsers()).filter(u => u.username !== username)) {
-    await processDataForPublish(datas, dataAssets, user.username, guidForInstructor, data);
+    publishPromises.push(processDataForPublish(datas, dataAssets, user.username, guidForInstructor, data));
   }
+  await Promise.all(publishPromises);
   await mongodb.postData(datas);
   await mongodb.postDataAsset(dataAssets);
   return { globalUniqueID: guidForInstructor };

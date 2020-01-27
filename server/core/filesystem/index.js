@@ -92,6 +92,7 @@ router.get('/:id/access', async(req, res, next) => {
 
 router.post('/publish', validator(schemas.postData), async(req, res, next) => {
   try {
+    res.setTimeout(5 * 60 * 1000);
     res.json(await fsController.publishData(req.username, req.body));
   } catch (err) {
     next(err);
