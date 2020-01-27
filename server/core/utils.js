@@ -1,6 +1,6 @@
 const Utils = {};
 const chalk = require('chalk');
-const moment = require('moment');
+const moment = require('moment-timezone');
 
 Utils.constructError = function(msg, code) {
   const err = new Error(msg);
@@ -38,7 +38,7 @@ Utils.logger = {
 };
 
 Utils.prettyDate = function(unixTimestamp) {
-  return moment(unixTimestamp).format("dddd, MMMM Do YYYY, h:mm:ss a");
+  return moment(unixTimestamp).tz("America/Regina").format("dddd, MMMM Do YYYY, h:mm:ss a");
 }
 
 Utils.durationToMinutes = function(duration) {
