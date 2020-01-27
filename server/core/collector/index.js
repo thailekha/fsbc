@@ -15,4 +15,12 @@ router.post('/', validator(collectorSchema), async(req, res, next) => {
   }
 });
 
+router.post('/logins', validator(collectorSchema), async(req, res, next) => {
+  try {
+    res.json(await controller.logins(req.body.link));
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;

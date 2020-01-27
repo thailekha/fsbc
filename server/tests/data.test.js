@@ -97,7 +97,7 @@ describe('user-management', function() {
       .set('Content-Type', 'application/json')
       .send(testUtils.addRoleInstructor(user2))
       .expect(409);
-  });
+  });  
   after(async() => {
     await mongodb.deleteDocuments();
   });
@@ -1032,6 +1032,134 @@ describe('collector', async() => {
     ];
 
     assert.deepEqual(resSources.body, csvTables);
+  });
+  it('should not record login when hasnt logged in', async() => {
+    const user = testUtils.generateUser();
+    await request(app)
+      .post('/v1/user/register')
+      .set('Content-Type', 'application/json')
+      .send(testUtils.addRole(user))
+      .expect(200);
+    const res = await request(app)
+      .post(`/v1/collector/logins`)
+      .set('Content-Type', 'application/json')
+      .send({
+        link: 'mongodb://127.0.0.1:27017/test'
+      })
+      .expect(200);
+
+    const csvTable = [ 
+      [ 'User IDs', 'Logins' ],
+      [ user.username, '' ]
+    ];
+    
+    assert.deepEqual(res.body, csvTable);
+  });
+  it('should record 1 login', async() => {
+    const user = testUtils.generateUser();
+    await request(app)
+      .post('/v1/user/register')
+      .set('Content-Type', 'application/json')
+      .send(testUtils.addRole(user))
+      .expect(200);
+    await request(app)
+      .post('/v1/user/login')
+      .set('Content-Type', 'application/json')
+      .send(user)
+      .expect(200);
+
+    const res = await request(app)
+      .post(`/v1/collector/logins`)
+      .set('Content-Type', 'application/json')
+      .send({
+        link: 'mongodb://127.0.0.1:27017/test'
+      })
+      .expect(200);
+    const csvTable = [ 
+      [ 'User IDs', 'Logins' ],
+      [ user.username, '' ]
+    ];
+
+    assert.deepEqual(res.body[0], csvTable[0]);
+    assert.equal(res.body[1][0], csvTable[1][0]);
+    assert.ok(res.body[1][1].length > 0);
+    assert.ok(!res.body[1][1].includes(';'));
+  });
+  it('should record 3 logins', async() => {
+    const user = testUtils.generateUser();
+    await request(app)
+      .post('/v1/user/register')
+      .set('Content-Type', 'application/json')
+      .send(testUtils.addRole(user))
+      .expect(200);
+    for(var i = 0; i < 3; i++) {
+      await request(app)
+        .post('/v1/user/login')
+        .set('Content-Type', 'application/json')
+        .send(user)
+        .expect(200);
+    }
+
+    const res = await request(app)
+      .post(`/v1/collector/logins`)
+      .set('Content-Type', 'application/json')
+      .send({
+        link: 'mongodb://127.0.0.1:27017/test'
+      })
+      .expect(200);
+    const csvTable = [ 
+      [ 'User IDs', 'Logins' ],
+      [ user.username, '' ]
+    ];
+
+    assert.deepEqual(res.body[0], csvTable[0]);
+    assert.equal(res.body[1][0], csvTable[1][0]);
+    assert.ok(res.body[1][1].split(';').length === 3);
+  });
+  it('should record 3 logins for each of 2 users', async() => {
+    const user1 = testUtils.generateUser();
+    const user2 = testUtils.generateUser();
+    await request(app)
+      .post('/v1/user/register')
+      .set('Content-Type', 'application/json')
+      .send(testUtils.addRole(user1))
+      .expect(200);
+    await request(app)
+      .post('/v1/user/register')
+      .set('Content-Type', 'application/json')
+      .send(testUtils.addRole(user2))
+      .expect(200);
+    for(var i = 0; i < 3; i++) {
+      await request(app)
+        .post('/v1/user/login')
+        .set('Content-Type', 'application/json')
+        .send(user1)
+        .expect(200);
+      await request(app)
+        .post('/v1/user/login')
+        .set('Content-Type', 'application/json')
+        .send(user2)
+        .expect(200);
+    }
+
+    const res = await request(app)
+      .post(`/v1/collector/logins`)
+      .set('Content-Type', 'application/json')
+      .send({
+        link: 'mongodb://127.0.0.1:27017/test'
+      })
+      .expect(200);
+    const csvTable = [ 
+      [ 'User IDs', 'Logins' ],
+      [ user1.username, '' ],
+      [ user2.username, '' ]
+    ];
+
+    assert.deepEqual(res.body[0], csvTable[0]);
+    assert.equal(res.body[1][0], csvTable[1][0]);
+    assert.equal(res.body[2][0], csvTable[2][0]);
+    assert.ok(res.body[1][1].split(';').length === 3);
+    assert.ok(res.body[2][1].split(';').length === 3);
   });
 });
 

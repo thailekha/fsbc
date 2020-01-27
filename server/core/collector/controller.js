@@ -54,4 +54,16 @@ CollectorController.collectAll = async function(link) {
   return csvTables;
 };
 
+CollectorController.logins = async function(link) {
+  const users = (await (new MongoDBController(link)).getUsers())
+    .map(user => {
+      const { username, logins} = user;
+      return [ username, logins.map(l => utils.prettyDate(l)).join('; ') ];
+    });
+  return [[
+    "User IDs",
+    "Logins"
+  ]].concat(users);
+};
+
 module.exports = CollectorController;
