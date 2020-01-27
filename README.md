@@ -34,22 +34,39 @@ vagrant ssh dev-machine
 sudo docker run --rm -p 127.0.0.1:27017:27017 mongo
 ```
 
-# Load test
-Make sure to use the load DB
+# Remote load test
+- Make sure to use the load DB
+- Manually delete all collections
 ```
 # cd to /mnt/vagrant/server
 
 # terminal 1
 export NODE_PATH=~/fsbc/node_modules
-export ATLAS_CREDS=mongodb://127.0.0.1:27017/load
-npm run dev
+export ATLAS_CREDS=... && \
+    export LOAD_URL=... && \
+    node ./tests/flushDevDB.js && node ./tests/load/stackServer.js
+
+# terminal 2
+# replace URL first
+export LOAD_URL=... && k6 run ./tests/load/load.test.js
+```
+
+# Local load test
+```
+# cd to /mnt/vagrant/server
+
+# terminal 1
+export NODE_PATH=~/fsbc/node_modules
+export ATLAS_CREDS=mongodb://127.0.0.1:27017/test && npm run dev
 
 # terminal 2
 export NODE_PATH=~/fsbc/node_modules
-export ATLAS_CREDS=mongodb://127.0.0.1:27017/load && node ./tests/flushDevDB.js && node ./tests/load/stackServer.js
+export ATLAS_CREDS=mongodb://127.0.0.1:27017/test && \
+    export LOAD_URL=http://localhost:9000 && \
+    node ./tests/flushDevDB.js && node ./tests/load/stackServer.js
 
 # terminal 3
-k6 run ./tests/load/load.test.js
+export LOAD_URL=http://localhost:9000 && k6 run ./tests/load/load.test.js
 ```
 
 # Deploy

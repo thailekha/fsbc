@@ -3,12 +3,15 @@ import { fail, sleep } from "k6";
 // import testUtils from './bundles/testUtils.js';
 import uniqid from './bundles/uniqid.js';
 
-const URL = 'http://localhost:9000';
+const URL = __ENV.LOAD_URL;
 const CREDS_SERVER = 'http://localhost:9001';
 
 function checkRes(res, info) {
-  if (res.status === 500 && res.body.includes("E11000 duplicate key error collection")) {
+  if (res.status === 500 && res.body.includes("E11000 duplicate")) {
     return;
+  }
+  if (res.status >= 300) {
+    console.error(`@\n@\n@\n@\n@\n@@@@@@@@@@@@@\n@\n@\nError body ${res.body} #\n#\n#\n#\n#\n#############\n#\n#\n#\n#\n`);
   }
   return res.status === 200 || fail(`${info} ${res.status}`);
 }

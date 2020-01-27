@@ -4,7 +4,7 @@ const testUtils = require('../testUtils');
 
 const app = express();
 const port = 9001;
-const URL = 'http://localhost:9000';
+const URL = process.env.LOAD_URL;
 
 var ready = false;
 var creds = {};
@@ -15,30 +15,36 @@ const instructor = {
 };
 
 async function addUsers() {
-  const reqs = [];
-  for (var i = 0; i < 1000; i++) {
-    const student = testUtils.generateUser();
-    creds[student.username] = student;
-    reqs.push(
-      request
-        .post(`${URL}/v1/user/register`)
-        .set('Content-Type', 'application/json')
-        .send(testUtils.addRole(student))
-    );
-  }
-  const results = await Promise.all(reqs);
-  results.forEach(r => {
-    if (r.status >= 201) {
-      delete creds[r.body];
-    }
-  });
-  creds = Object.values(creds);
-  console.log('Registered students');
   await request
     .post(`${URL}/v1/user/register`)
     .set('Content-Type', 'application/json')
     .send(testUtils.addRoleInstructor(instructor));
   console.log('Registered instructor');
+
+  const reqs = [];
+  for (var x = 0; x < 20; x++) {
+    // Register 50 at a time - atlas only allows 100 connection
+    for (var i = 0; i < 50; i++) {
+      const student = testUtils.generateUser();
+      creds[student.username] = student;
+      reqs.push(
+        request
+          .post(`${URL}/v1/user/register`)
+          .set('Content-Type', 'application/json')
+          .send(testUtils.addRole(student))
+      );
+    }
+
+    const results = await Promise.all(reqs);
+    results.forEach(r => {
+      if (r.status >= 201) {
+        delete creds[r.body];
+      }
+    });
+    console.log(`Registered ${Object.keys(creds).length} students`);
+  }
+
+  creds = Object.values(creds);
 }
 
 async function addTasks() {
