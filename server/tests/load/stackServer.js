@@ -22,9 +22,9 @@ async function addUsers() {
   console.log('Registered instructor');
 
   const reqs = [];
-  for (var x = 0; x < 20; x++) {
+  for (var x = 0; x < 2; x++) {
     // Register 50 at a time - atlas only allows 100 connection
-    for (var i = 0; i < 50; i++) {
+    for (var i = 0; i < 500; i++) {
       const student = testUtils.generateUser();
       creds[student.username] = student;
       reqs.push(

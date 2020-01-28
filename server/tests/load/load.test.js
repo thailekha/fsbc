@@ -7,11 +7,21 @@ const URL = __ENV.LOAD_URL;
 const CREDS_SERVER = 'http://localhost:9001';
 
 function checkRes(res, info) {
-  if (res.status === 500 && res.body.includes("E11000 duplicate")) {
+  //  res.body is string
+  if (
+    res.status === 500 && 
+    (
+      res.body.includes("E11000 duplicate") ||
+      (
+        res.body.includes("guid") && res.body.includes("unique")
+      )
+    )
+  ) {
     return;
   }
+
   if (res.status >= 300) {
-    console.error(`@\n@\n@\n@\n@\n@@@@@@@@@@@@@\n@\n@\nError body ${res.body} #\n#\n#\n#\n#\n#############\n#\n#\n#\n#\n`);
+    console.error(`@\n@\n@\n@\n@\n@@@@@@@@@@@@@\n@\n@\nError body ${res.body}\n#\n#\n#\n#\n#############\n#\n#\n#\n#\n`);
   }
   return res.status === 200 || fail(`${info} ${res.status}`);
 }
