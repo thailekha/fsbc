@@ -6,7 +6,7 @@ const statusCodes = require('http-status-codes');
 const utils = require('../utils');
 
 const mongodb = new MongoDBController(process.env.ATLAS_CREDS);
-// const fsController = require('../filesystem/controller')(mongodb);
+const fsController = require('../filesystem/controller')(mongodb);
 
 const UserController = {};
 
@@ -35,10 +35,11 @@ UserController.register = async function(username, password, role) {
 
   try {
     await mongodb.postUser({username,hashedPassword,salt,role});
-    // if (role !== 'INSTRUCTOR') {
-    //   await fsController.populatePublishedDataToNewUser(username);
-    // }
+    if (role !== 'INSTRUCTOR') {
+      await fsController.populatePublishedDataToNewUser(username);
+    }
   } catch (err) {
+    // notice if populatePublishedDataToNewUser is used, this error could mean duplicate data asset as well
     throw utils.formatError(err.message, 'to be unique', 'Email already registered', statusCodes.CONFLICT, 'Cannot register');
   }
 };

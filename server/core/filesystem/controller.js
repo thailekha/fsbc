@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const hash = require('object-hash');
 const statusCodes = require('http-status-codes');
 const utils = require('../utils');
+const uniqid = require('uniqid');
 
 let mongodb;
 const FilesystemController = {};
@@ -295,6 +296,7 @@ FilesystemController.getPublished = async function(username) {
 async function processDataForPublish(datas, dataAssets, username, sourceOfPublish, data) {
   const d = JSON.parse(JSON.stringify(data));
   await timeout(1.5); //sleep milliseconds to ensure a unique guid
+  d._forceUnique = uniqid();
   d._dateAdded = (new Date()).getTime();
   const encryptedData = encrypt(d);
   const guid = hash(encryptedData);
@@ -354,6 +356,7 @@ FilesystemController.populatePublishedDataToNewUser = async function(username) {
     await timeout(1.5); //sleep milliseconds to ensure a unique guid
     const data = decrypt(d.data);
     data._dateAdded = (new Date()).getTime();
+    data._forceUnique = uniqid();
     const encryptedData = encrypt(data);
     const guid = hash(encryptedData);
 
