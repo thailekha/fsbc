@@ -109,6 +109,26 @@ class MongoDBController {
     return res;
   }
 
+  async getDataAssetsWhereGuidEqSourceOfPublish() {
+    await this.connectToDatabase();
+    // Please do not use es6 syntax in $where, mongo's JS interpreter cannot process it
+    // Registering more than 100 students (more data asset) and this got slow
+    // const res = await DataAsset.find({
+    //   $where: function() {
+    //     return this.guid === this.sourceOfPublish;
+    //   }
+    // }).lean();
+
+    // https://docs.mongodb.com/manual/reference/operator/query/expr/
+
+    const res = await DataAsset.find({
+      $expr: {
+        $eq: [ "$guid" , "$sourceOfPublish" ]
+      }
+    }).lean();
+    return res;
+  }
+
   async getNewerVersionOfDataAsset(lastVersion) {
     await this.connectToDatabase();
     const res = await DataAsset.findOne({lastVersion}).lean();

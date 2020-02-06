@@ -342,8 +342,7 @@ FilesystemController.publishData = async function(username, data) {
 };
 
 FilesystemController.populatePublishedDataToNewUser = async function(username) {
-  const sources = (await mongodb.getAllDataAssets())
-    .filter(a => a.guid === a.sourceOfPublish);
+  const sources = await mongodb.getDataAssetsWhereGuidEqSourceOfPublish();
   if (sources.length === 0) {
     return;
   }
