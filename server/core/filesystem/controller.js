@@ -22,6 +22,10 @@ function constructVersion(asset) {
   return JSON.parse(JSON.stringify(result));
 }
 
+async function atOnce(...promises) {
+  return await Promise.all(promises);
+}
+
 // ############################
 // Encryption
 // ############################
@@ -89,61 +93,61 @@ FilesystemController.postData = async function(username, data) {
 
   const guid = hash(encryptedData);
 
-  await mongodb.postData({
-    guid: guid,
-    data: encryptedData
-  });
-
-  await mongodb.postDataAsset({
-    guid: guid,
-    originalName: '',
-    mimetype: 'application/json',
-    lastChangedAt: (new Date()).getTime(),
-    active: 1,
-    owner: username,
-    lastChangedBy: username,
-    authorizedUsers: [],
-    lastVersion: null,
-    firstVersion: guid,
-    sourceOfPublish: null
-  });
+  await atOnce(
+    mongodb.postData({
+      guid: guid,
+      data: encryptedData
+    }),
+    mongodb.postDataAsset({
+      guid: guid,
+      originalName: '',
+      mimetype: 'application/json',
+      lastChangedAt: (new Date()).getTime(),
+      active: 1,
+      owner: username,
+      lastChangedBy: username,
+      authorizedUsers: [],
+      lastVersion: null,
+      firstVersion: guid,
+      sourceOfPublish: null
+    })
+  );
   return { globalUniqueID: guid };
 };
 
 FilesystemController.getData = async function(guid, username) {
-  const dataAsset = await mongodb.getDataAsset(guid);
-  const data = await mongodb.getData(guid);
+  const [dataAsset, data] = await atOnce(mongodb.getDataAsset(guid), mongodb.getData(guid));
   validateAccessDataAsset(data, dataAsset, username);
   return decrypt(data.data);
 };
 
 FilesystemController.putData = async function(guid, username, data) {
-  const dataAsset = await mongodb.getDataAsset(guid);
-  const oldData = await mongodb.getData(guid);
+  const [dataAsset, oldData] = await atOnce(mongodb.getDataAsset(guid), mongodb.getData(guid));
   validateAccessDataAsset(oldData, dataAsset, username);
 
   data._dateAdded = (new Date()).getTime();
   const encryptedData = encrypt(data);
   const newGuid = hash(encryptedData);
 
-  await mongodb.postData({
-    guid: newGuid,
-    data: encryptedData
-  });
-
-  await mongodb.postDataAsset({
-    guid: newGuid,
-    originalName: dataAsset.originalName,
-    mimetype: dataAsset.mimetype,
-    lastChangedAt: (new Date()).getTime(),
-    active: 1,
-    owner: dataAsset.owner,
-    lastChangedBy: username,
-    authorizedUsers: dataAsset.authorizedUsers,
-    lastVersion: guid,
-    firstVersion: dataAsset.firstVersion,
-    sourceOfPublish: dataAsset.sourceOfPublish
-  });
+  await atOnce(
+    mongodb.postData({
+      guid: newGuid,
+      data: encryptedData
+    }),
+    mongodb.postDataAsset({
+      guid: newGuid,
+      originalName: dataAsset.originalName,
+      mimetype: dataAsset.mimetype,
+      lastChangedAt: (new Date()).getTime(),
+      active: 1,
+      owner: dataAsset.owner,
+      lastChangedBy: username,
+      authorizedUsers: dataAsset.authorizedUsers,
+      lastVersion: guid,
+      firstVersion: dataAsset.firstVersion,
+      sourceOfPublish: dataAsset.sourceOfPublish
+    })
+  );
 
   return { globalUniqueID: newGuid };
 };
@@ -333,11 +337,11 @@ FilesystemController.publishData = async function(username, data) {
   const guidForInstructor = await processDataForPublish(datas, dataAssets, username, null, data);
   // const publishPromises = [];
   for (const user of otherUsers) {
+    // processDataForPublish needs to sleep for 1.5 secs each so avoid Promise.all
     await processDataForPublish(datas, dataAssets, user.username, guidForInstructor, data);
   }
   // await Promise.all(publishPromises);
-  await mongodb.postData(datas);
-  await mongodb.postDataAsset(dataAssets);
+  await atOnce( mongodb.postData(datas), mongodb.postDataAsset(dataAssets) );
   return { globalUniqueID: guidForInstructor };
 };
 
@@ -377,8 +381,7 @@ FilesystemController.populatePublishedDataToNewUser = async function(username) {
       sourceOfPublish: d.guid
     });
   }
-  await mongodb.postData(newDatas);
-  await mongodb.postDataAsset(newAssets);
+  await atOnce( mongodb.postData(newDatas), mongodb.postDataAsset(newAssets) );
 };
 
 // Trace: retrieve only items that user has access to. only throws 403 if the requested id is unauthorized
