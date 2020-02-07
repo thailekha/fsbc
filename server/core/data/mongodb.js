@@ -109,6 +109,27 @@ class MongoDBController {
     return res;
   }
 
+  async getAllDataAssetsOfUser(username) {
+    await this.connectToDatabase();
+    const res = await DataAsset.find({
+      $or: [
+        {
+          owner: {
+            $eq: username
+          }
+        },
+        {
+          authorizedUsers: {
+            $in: [
+              username
+            ]
+          }
+        }
+      ]
+    }).lean();
+    return res;
+  }
+
   async getDataAssetsWhereGuidEqSourceOfPublish() {
     await this.connectToDatabase();
     // Please do not use es6 syntax in $where, mongo's JS interpreter cannot process it

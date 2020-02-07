@@ -152,28 +152,18 @@ FilesystemController.putData = async function(guid, username, data) {
 // Advanced
 // ############################
 
-FilesystemController.organizeToLatestAssets = function(username, assets) {
+/**
+ * Make sure assets have been filtered with owner === username || authorizedUsers.includes(username)
+ */
+FilesystemController.organizeToLatestAssets = function(assets) {
   var latestAssets = {};
   assets
-    .filter(a => {
-      if (username) {
-        return a.owner === username || a.authorizedUsers.includes(username);
-      }
-      return true;
-    })
     .forEach(a => {
       if (!latestAssets[a.firstVersion] || latestAssets[a.firstVersion].lastChangedAt < a.lastChangedAt) {
         latestAssets[a.firstVersion] = a;
       }
     });
-  latestAssets = Object
-    .values(latestAssets)
-    .filter(a => {
-      if (username) {
-        return validAccess(a, username);
-      }
-      return true;
-    });
+  latestAssets = Object.values(latestAssets);
   // change lastChangedAt schema to int?
   latestAssets.sort((x,y) => x.lastChangedAt < y.lastChangedAt);
   const dates = {};
@@ -186,7 +176,7 @@ FilesystemController.organizeToLatestAssets = function(username, assets) {
 };
 
 FilesystemController.getAllData = async function(username) {
-  const {latestAssets, dates} = this.organizeToLatestAssets(username, await mongodb.getAllDataAssets());
+  const {latestAssets, dates} = this.organizeToLatestAssets(await mongodb.getAllDataAssetsOfUser(username));
   const lastestDatas = await mongodb.getDatas(latestAssets.map(d => d.guid));
   lastestDatas.sort((x,y) => dates[x.guid] < dates[y.guid]);
 
@@ -255,7 +245,7 @@ FilesystemController.getPublished = async function(username) {
       }
       return {sources, otherAssets};
     }, {sources: [], otherAssets: []});
-  const { latestAssets: latestSources, dates: sourceGuidsDates } = this.organizeToLatestAssets(username, sources);
+  const { latestAssets: latestSources, dates: sourceGuidsDates } = this.organizeToLatestAssets(sources);
   const sourceGuidsToPublishedAssets = latestSources.reduce((obj, a) =>  (obj[a.guid] = [], obj), {});
 
   otherAssets
@@ -269,7 +259,7 @@ FilesystemController.getPublished = async function(username) {
   var guidsToFetch = Object.keys(sourceGuidsToPublishedAssets);
   const guidsToOwners = {};
   for (const [sourceGuid, publishes] of Object.entries(sourceGuidsToPublishedAssets)) {
-    const {latestAssets, dates} = this.organizeToLatestAssets(null, publishes);
+    const {latestAssets, dates} = this.organizeToLatestAssets(publishes);
     const latestGuids = latestAssets.map(a => a.guid);
     guidsToFetch = guidsToFetch.concat(latestGuids);
     latestAssets.forEach(a => guidsToOwners[a.guid] = a.owner);
@@ -346,7 +336,7 @@ FilesystemController.populatePublishedDataToNewUser = async function(username) {
   if (sources.length === 0) {
     return;
   }
-  const {latestAssets: publishedAssetGuids, dates} = this.organizeToLatestAssets(null, sources);
+  const {latestAssets: publishedAssetGuids, dates} = this.organizeToLatestAssets(sources);
   const newDatas = [];
   const newAssets = [];
   const datas = (await mongodb.getDatas(publishedAssetGuids.map(a => a.guid)));
