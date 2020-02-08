@@ -14,18 +14,23 @@ const instructor = {
   password: 'iii'
 };
 
-async function addUsers() {
+async function addInstructor() {
   await request
     .post(`${URL}/v1/user/register`)
     .set('Content-Type', 'application/json')
     .send(testUtils.addRoleInstructor(instructor));
   console.log('Registered instructor');
+}
 
+async function addStudents() {
   const reqs = [];
-  for (var x = 0; x < 2; x++) {
+  for (var x = 0; x < 20; x++) {
     // Register 50 at a time - atlas only allows 100 connection
-    for (var i = 0; i < 500; i++) {
+    for (var i = 0; i < 50; i++) {
       const student = testUtils.generateUser();
+      if (creds[student.username]) {
+        throw new Error(`Generated same user ${student.username}`);
+      }
       creds[student.username] = student;
       reqs.push(
         request
@@ -52,37 +57,31 @@ async function addTasks() {
     .post(`${URL}/v1/user/login`)
     .set('Content-Type', 'application/json')
     .send(instructor);
-  const task1 = {
-    "name": "project1",
-    "estimatedHours": "10",
-    "notes": "",
-    "estimatedStress": 5,
-    "regulatedStartDate": 1573581600000,
-    "regulatedEndDate": 1573668000000,
-    "_dateAdded": 1573598464009
-  };
-  const task2 = {
-    "name": "project2",
-    "estimatedHours": "20",
-    "notes": "",
-    "estimatedStress": 5,
-    "regulatedStartDate": 1573581600000,
-    "regulatedEndDate": 1573668000000,
-    "_dateAdded": 1573598486217
-  };
-  for (const t of [task1, task2]) {
-    await request
+  const reqs = [];
+  for (var i = 0; i < 15; i++) {
+    reqs.push(request
       .post(`${URL}/v1/fs/publish`)
       .set('Content-Type', 'application/json')
       .set('Authorization', `Bearer ${token}`)
-      .send(t);
+      .send({
+        "name": `proejct ${i}`,
+        "estimatedHours": `${i}`,
+        "notes": "",
+        "estimatedStress": 5,
+        "regulatedStartDate": 1573581600000,
+        "regulatedEndDate": 1573668000000,
+        "_dateAdded": 1573598486217
+      }));
   }
+  await Promise.all(reqs);
   console.log('Added tasks');
 }
 
 async function setup() {
-  await addUsers();
+  await addInstructor();
+  // await addStudents();
   await addTasks();
+  await addStudents();
   console.log(`Prepared for ${creds.length} students`);
   ready = true;
 }

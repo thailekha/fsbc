@@ -9,7 +9,7 @@ const CREDS_SERVER = 'http://localhost:9001';
 function checkRes(res, info) {
   //  res.body is string
   if (
-    res.status === 500 && 
+    res.status === 500 &&
     (
       res.body.includes("E11000 duplicate") ||
       (
@@ -27,8 +27,8 @@ function checkRes(res, info) {
 }
 
 export const options = {
-  vus: 50,
-  duration: "1m"
+  vus: 300,
+  duration: "10m"
 };
 
 export default function() {
@@ -45,50 +45,20 @@ export default function() {
     `${URL}/v1/fs`, auth
   ).json();
 
-  const {guid: guidTask2} = resGetAll[0];
-  const {guid: guidTask1} = resGetAll[1];
+  // console.log(resGetAll);
+  // console.log(`VU: ${__VU}  -  ITER: ${__ITER}`);
+  for (const task of resGetAll) {
+    task["startTime"] = 1573598757175;
+    task["endTime"] = 1573598759195;
+    task["duration"] = 2020;
+    task["stress"] = 5;
+    task["comments"] = "dunno";
+    task["overallStress"] = 10;
+    task["foo"] = uniqid();
 
-  console.log(`VU: ${__VU}  -  ITER: ${__ITER} - ${guidTask2}`);
-
-  const task1_a = {
-    "name": "project1",
-    "estimatedHours": "10",
-    "notes": "",
-    "estimatedStress": 5,
-    "regulatedStartDate": 1573581600000,
-    "regulatedEndDate": 1573668000000,
-    "_dateAdded": 1573598764831,
-    "startTime": 1573598757175,
-    "endTime": 1573598759195,
-    "duration": 2020,
-    "stress": 5,
-    "comments": "dunno",
-    "overallStress": 10,
-    "foo": uniqid()
-  };
-  const task2_a = {
-    "name": "project2",
-    "estimatedHours": "20",
-    "notes": "",
-    "estimatedStress": 5,
-    "regulatedStartDate": 1573581600000,
-    "regulatedEndDate": 1573668000000,
-    "_dateAdded": 1573598751012,
-    "startTime": 1573598737833,
-    "endTime": 1573598741135,
-    "duration": 3302,
-    "stress": 5,
-    "comments": "dunno",
-    "overallStress": 10,
-    "foo": uniqid()
-  };
-
-  const resDoTask2 = http.put(
-    `${URL}/v1/fs/${guidTask2}`, task2_a, auth
-  );
-  checkRes(resDoTask2, `Do task 2 ${guidTask2}`);
-  const resDoTask1 = http.put(
-    `${URL}/v1/fs/${guidTask1}`, task1_a, auth
-  );
-  checkRes(resDoTask1, `Do task 1 ${guidTask1}`);
+    const resDoTask = http.put(
+      `${URL}/v1/fs/${task.guid}`, task, auth
+    );
+    checkRes(resDoTask, `Do task ${task.guid}`);
+  }
 }
