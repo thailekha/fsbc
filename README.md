@@ -32,9 +32,37 @@ vagrant ssh dev-machine
 # Mongodb container
 ```
 sudo docker run --rm -p 127.0.0.1:27017:27017 mongo
+
+show collections
+db.dataassets.find
 ```
 
-# Remote load test
+# Remote load test - both backend and DB
+- Make sure to use the load DB
+- Manually delete all collections
+```
+# cd to /mnt/vagrant/server
+
+# terminal 1
+heroku labs:enable log-runtime-metrics
+heroku logs --app cd-load-usask --tail
+heroku ps:restart
+
+# terminal 2
+htop
+
+# terminal 3
+export NODE_PATH=~/fsbc/node_modules
+export ATLAS_CREDS=... && \
+    export LOAD_URL=https://cd-load-usask.herokuapp.com && \
+    node ./tests/load/stackServer.js
+
+# terminal 4
+# replace URL first
+export LOAD_URL=https://cd-load-usask.herokuapp.com && k6 run ./tests/load/load.test.js
+```
+
+# Remote load test - just DB
 - Make sure to use the load DB
 - Manually delete all collections
 ```
@@ -42,13 +70,17 @@ sudo docker run --rm -p 127.0.0.1:27017:27017 mongo
 
 # terminal 1
 export NODE_PATH=~/fsbc/node_modules
-export ATLAS_CREDS=... && \
-    export LOAD_URL=... && \
-    node ./tests/flushDevDB.js && node ./tests/load/stackServer.js
+export ATLAS_CREDS=... && npm run dev
 
 # terminal 2
+export NODE_PATH=~/fsbc/node_modules
+export ATLAS_CREDS=... && \
+    export LOAD_URL=http://localhost:9000 && \
+    node ./tests/load/stackServer.js
+
+# terminal 3
 # replace URL first
-export LOAD_URL=... && k6 run ./tests/load/load.test.js
+export LOAD_URL=http://localhost:9000 && k6 run ./tests/load/load.test.js
 ```
 
 # Local load test
@@ -63,7 +95,7 @@ export ATLAS_CREDS=mongodb://127.0.0.1:27017/test && npm run dev
 export NODE_PATH=~/fsbc/node_modules
 export ATLAS_CREDS=mongodb://127.0.0.1:27017/test && \
     export LOAD_URL=http://localhost:9000 && \
-    node ./tests/flushDevDB.js && node ./tests/load/stackServer.js
+    node ./tests/load/stackServer.js
 
 # terminal 3
 export LOAD_URL=http://localhost:9000 && k6 run ./tests/load/load.test.js

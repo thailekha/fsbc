@@ -11,6 +11,8 @@ const testUtils = require('./testUtils');
 
 const mongodb = new MongoDBController(process.env.ATLAS_CREDS);
 
+const collectorCreds = 'mongodb://127.0.0.1:27017/test';
+
 describe('user-management', function() {
   before(async() => {
     await mongodb.deleteDocuments();
@@ -918,7 +920,7 @@ describe('collector', async() => {
       .post(`/v1/collector`)
       .set('Content-Type', 'application/json')
       .send({
-        link: 'mongodb://127.0.0.1:27017/test'
+        link: collectorCreds
       })
       .expect(200);
 
@@ -1017,7 +1019,7 @@ describe('collector', async() => {
       .post(`/v1/collector`)
       .set('Content-Type', 'application/json')
       .send({
-        link: 'mongodb://127.0.0.1:27017/test'
+        link: collectorCreds
       })
       .expect(200);
 
@@ -1044,7 +1046,7 @@ describe('collector', async() => {
       .post(`/v1/collector/logins`)
       .set('Content-Type', 'application/json')
       .send({
-        link: 'mongodb://127.0.0.1:27017/test'
+        link: collectorCreds
       })
       .expect(200);
 
@@ -1072,7 +1074,7 @@ describe('collector', async() => {
       .post(`/v1/collector/logins`)
       .set('Content-Type', 'application/json')
       .send({
-        link: 'mongodb://127.0.0.1:27017/test'
+        link: collectorCreds
       })
       .expect(200);
     const csvTable = [ 
@@ -1104,7 +1106,7 @@ describe('collector', async() => {
       .post(`/v1/collector/logins`)
       .set('Content-Type', 'application/json')
       .send({
-        link: 'mongodb://127.0.0.1:27017/test'
+        link: collectorCreds
       })
       .expect(200);
     const csvTable = [ 
@@ -1146,7 +1148,7 @@ describe('collector', async() => {
       .post(`/v1/collector/logins`)
       .set('Content-Type', 'application/json')
       .send({
-        link: 'mongodb://127.0.0.1:27017/test'
+        link: collectorCreds
       })
       .expect(200);
     const csvTable = [ 
