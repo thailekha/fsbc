@@ -81,7 +81,7 @@ Vagrant.configure("2") do |vagrant_conf|
   end
 
   vagrant_conf.vm.define "backend" do |config|
-    common_config(config, "2048")
+    common_config(config, "3000")
     config.vm.box = "ubuntu/xenial64"
     install_node(config)
     install_docker(config)
