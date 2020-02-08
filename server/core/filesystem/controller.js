@@ -189,8 +189,7 @@ FilesystemController.getAllData = async function(username) {
 
 //need to check authorization at each version?
 FilesystemController.getLatestDataAsset = async function(currentDataAsset, username) {
-  const sameFirstVersionAssets = (await mongodb.getDataAssetByFirstVersion(currentDataAsset.firstVersion))
-    .filter(a => a.owner === username || a.authorizedUsers.includes(username));
+  const sameFirstVersionAssets = (await mongodb.getDataAssetByFirstVersion(currentDataAsset.firstVersion, username));
   var latestAsset = sameFirstVersionAssets[0];
   sameFirstVersionAssets
     .forEach(a => {

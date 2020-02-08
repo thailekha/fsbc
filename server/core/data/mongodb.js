@@ -4,6 +4,21 @@ const DataAsset = require('./mongodbSchemas/dataAsset');
 const Data = require('./mongodbSchemas/data');
 const utils = require('../utils');
 
+const validDataAssetAccess = username => [
+  {
+    owner: {
+      $eq: username
+    }
+  },
+  {
+    authorizedUsers: {
+      $in: [
+        username
+      ]
+    }
+  }
+];
+
 class MongoDBController {
   // Need to pass creds for collector endpoint
   constructor(creds) {
@@ -88,9 +103,12 @@ class MongoDBController {
     return res;
   }
 
-  async getDataAssetByFirstVersion(firstVersion) {
+  async getDataAssetByFirstVersion(firstVersion, username) {
     await this.connectToDatabase();
-    const res = await DataAsset.find({firstVersion}).lean();
+    const res = await DataAsset.find({
+      firstVersion,
+      $or: validDataAssetAccess(username)
+    }).lean();
     return res;
   }
 
@@ -112,20 +130,7 @@ class MongoDBController {
   async getAllDataAssetsOfUser(username) {
     await this.connectToDatabase();
     const res = await DataAsset.find({
-      $or: [
-        {
-          owner: {
-            $eq: username
-          }
-        },
-        {
-          authorizedUsers: {
-            $in: [
-              username
-            ]
-          }
-        }
-      ]
+      $or: validDataAssetAccess(username)
     }).lean();
     return res;
   }
