@@ -1,11 +1,23 @@
 const fsController = require('../filesystem/controller');
 const MongoDBController = require('../data/mongodb');
 const utils = require('../utils');
+const urlParse = require('url-parse-lax');
+const isUrl = require('is-absolute-url');
 
 const CollectorController = {};
 
-CollectorController.collectAll = async function(link) {
-  const fs = fsController(new MongoDBController(link));
+function getLink(password) {
+  if (isUrl(password)) {
+    // means running test
+    return password;
+  }
+  const { protocol, host, path } = urlParse(process.env.ATLAS_CREDS);
+  const link = `${protocol}//reader:${password}@${host}${path}`;
+  return link;
+}
+
+CollectorController.collectAll = async function(password) {
+  const fs = fsController(new MongoDBController(getLink(password)));
   const csvTables = (await fs.getPublished())
     .map(tasks => {
       const { source : { data: s, }, published } = tasks;
@@ -54,8 +66,8 @@ CollectorController.collectAll = async function(link) {
   return csvTables;
 };
 
-CollectorController.logins = async function(link) {
-  const users = (await (new MongoDBController(link)).getUsers())
+CollectorController.logins = async function(password) {
+  const users = (await (new MongoDBController(getLink(password))).getUsers())
     .map(user => {
       const { username, logins} = user;
       return [ username, logins.map(l => utils.prettyDate(l)).join('; ') ];
