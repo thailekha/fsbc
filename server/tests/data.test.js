@@ -416,8 +416,6 @@ describe('get-latest', async() => {
       .send({grantedUsers: [user2.username]})
       .expect(200);
 
-    await timeout(3000);
-
     await request(app)
       .put(`/v1/fs/${guid}`)
       .set('Content-Type', 'application/json')
