@@ -1,6 +1,9 @@
 # FSBC
 ![](https://travis-ci.org/thailekha/fsbc.svg?branch=master)
 
+# Bugs
+- Newly registered users get populated with all published data at once -> solution is to use the lastChangedAt of published data in populatePublishedDataToNewUser
+
 # Notes
 - Do not disconnect connections to hyperledger/mongodb. Leave them on.
 

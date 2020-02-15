@@ -716,9 +716,10 @@ describe('publish-data', async() => {
       .expect(200);
 
     assert.equal(resGetAll.body.length, 3);
-    assert.deepEqual(resGetAll.body[0].data.coffee, data3.coffee);
-    assert.deepEqual(resGetAll.body[1].data.coffee, data2.coffee);
-    assert.deepEqual(resGetAll.body[2].data.coffee, data1.coffee);
+    const resCoffees = resGetAll.body.map(r => r.data.coffee);
+    expect(resCoffees).to.include(data3.coffee);
+    expect(resCoffees).to.include(data2.coffee);
+    expect(resCoffees).to.include(data1.coffee);
   });
   after(async() => {
     await mongodb.deleteDocuments();
