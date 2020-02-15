@@ -60,31 +60,13 @@ def forward_port(config, guest, host = guest)
 end
 
 Vagrant.configure("2") do |vagrant_conf|
-  vagrant_conf.vm.define "composer-empty" do |config|
-    common_config(config, "2046")
-    config.vm.box = "ubuntu/xenial64"
-  end
-
-  # (1..3).each do |i|
-  #   vagrant_conf.vm.define "ipfs#{i}" do |config|
-  #     # ipfs_machine(config, i > 1)
-  #     common_config(config)
-  #     config.vm.box = "ubuntu/xenial64"
-  #     config.vm.network "public_network"
-  #   end
-  # end
-
-  vagrant_conf.vm.define "dev-machine" do |config|
-    common_config(config, "4096")
-    config.vm.box = "fsbc/composer"
-    forward_port(config,9000)
-  end
-
   vagrant_conf.vm.define "backend" do |config|
     common_config(config, "3000")
     config.vm.box = "ubuntu/xenial64"
     install_node(config)
     install_docker(config)
     forward_port(config,9000)
+    forward_port(config,9229)
+    forward_port(config,8123)
   end
 end
