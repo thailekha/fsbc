@@ -2,7 +2,6 @@ const crypto = require('crypto');
 const hash = require('object-hash');
 const statusCodes = require('http-status-codes');
 const utils = require('../utils');
-const uniqid = require('uniqid');
 
 let mongodb;
 const FilesystemController = {};
@@ -58,6 +57,25 @@ function decrypt(encrypted) {
   return decrypted;
 }
 
+function processDataAndAsset(content, asset, firstVersion) {
+  const encryptedData = encrypt(content);
+
+  // hash the data together with the asset to enforce uniqueness if 2 users add the same data content
+  const guid = hash({
+    encryptedData,
+    metadata: asset
+  });
+  asset.guid = guid;
+  asset.firstVersion = firstVersion ? firstVersion : guid;
+  return {
+    data: {
+      guid: guid,
+      data: encryptedData
+    },
+    asset
+  };
+}
+
 // ############################
 // Validator
 // ############################
@@ -88,31 +106,22 @@ function dataAssetExists(dataAsset) {
 // ############################
 
 FilesystemController.postData = async function(username, data) {
-  data._dateAdded = (new Date()).getTime();
-  const encryptedData = encrypt(data);
-
-  const guid = hash(encryptedData);
-
+  const processed = processDataAndAsset(data, {
+    originalName: '',
+    mimetype: 'application/json',
+    lastChangedAt: (new Date()).getTime(),
+    active: 1,
+    owner: username,
+    lastChangedBy: username,
+    authorizedUsers: [],
+    lastVersion: null,
+    sourceOfPublish: null
+  });
   await atOnce(
-    mongodb.postData({
-      guid: guid,
-      data: encryptedData
-    }),
-    mongodb.postDataAsset({
-      guid: guid,
-      originalName: '',
-      mimetype: 'application/json',
-      lastChangedAt: (new Date()).getTime(),
-      active: 1,
-      owner: username,
-      lastChangedBy: username,
-      authorizedUsers: [],
-      lastVersion: null,
-      firstVersion: guid,
-      sourceOfPublish: null
-    })
+    mongodb.postData(processed.data),
+    mongodb.postDataAsset(processed.asset)
   );
-  return { globalUniqueID: guid };
+  return { globalUniqueID: processed.data.guid };
 };
 
 FilesystemController.getData = async function(guid, username) {
@@ -125,31 +134,24 @@ FilesystemController.putData = async function(guid, username, data) {
   const [dataAsset, oldData] = await atOnce(mongodb.getDataAsset(guid), mongodb.getData(guid));
   validateAccessDataAsset(oldData, dataAsset, username);
 
-  data._dateAdded = (new Date()).getTime();
-  const encryptedData = encrypt(data);
-  const newGuid = hash(encryptedData);
+  const processed = processDataAndAsset(data, {
+    originalName: dataAsset.originalName,
+    mimetype: dataAsset.mimetype,
+    lastChangedAt: (new Date()).getTime(),
+    active: 1,
+    owner: dataAsset.owner,
+    lastChangedBy: username,
+    authorizedUsers: dataAsset.authorizedUsers,
+    lastVersion: guid,
+    sourceOfPublish: dataAsset.sourceOfPublish
+  }, dataAsset.firstVersion);
 
   await atOnce(
-    mongodb.postData({
-      guid: newGuid,
-      data: encryptedData
-    }),
-    mongodb.postDataAsset({
-      guid: newGuid,
-      originalName: dataAsset.originalName,
-      mimetype: dataAsset.mimetype,
-      lastChangedAt: (new Date()).getTime(),
-      active: 1,
-      owner: dataAsset.owner,
-      lastChangedBy: username,
-      authorizedUsers: dataAsset.authorizedUsers,
-      lastVersion: guid,
-      firstVersion: dataAsset.firstVersion,
-      sourceOfPublish: dataAsset.sourceOfPublish
-    })
+    mongodb.postData(processed.data),
+    mongodb.postDataAsset(processed.asset)
   );
 
-  return { globalUniqueID: newGuid };
+  return { globalUniqueID: processed.data.guid };
 };
 
 // ############################
@@ -286,21 +288,8 @@ FilesystemController.getPublished = async function(username) {
   return res;
 };
 
-async function processDataForPublish(datas, dataAssets, username, sourceOfPublish, data) {
-  const d = JSON.parse(JSON.stringify(data));
-  await timeout(1.5); //sleep milliseconds to ensure a unique guid
-  d._forceUnique = uniqid();
-  d._dateAdded = (new Date()).getTime();
-  const encryptedData = encrypt(d);
-  const guid = hash(encryptedData);
-
-  datas.push({
-    guid: guid,
-    data: encryptedData
-  });
-
-  dataAssets.push({
-    guid,
+function processDataForPublish(datas, dataAssets, username, sourceOfPublish, forPublish) {
+  const processed = processDataAndAsset(JSON.parse(JSON.stringify(forPublish)), {
     originalName: '',
     mimetype: 'application/json',
     lastChangedAt: (new Date()).getTime(),
@@ -308,12 +297,12 @@ async function processDataForPublish(datas, dataAssets, username, sourceOfPublis
     owner: username,
     lastChangedBy: username,
     authorizedUsers: [],
-    lastVersion: null,
-    firstVersion: guid,
-    sourceOfPublish: sourceOfPublish ? sourceOfPublish : guid
+    lastVersion: null
   });
-
-  return guid;
+  processed.asset.sourceOfPublish = sourceOfPublish ? sourceOfPublish : processed.data.guid;
+  datas.push(processed.data);
+  dataAssets.push(processed.asset);
+  return processed.data.guid;
 }
 
 FilesystemController.publishData = async function(username, data) {
@@ -333,11 +322,11 @@ FilesystemController.publishData = async function(username, data) {
 
   const datas = [];
   const dataAssets = [];
-  const guidForInstructor = await processDataForPublish(datas, dataAssets, username, null, data);
+  const guidForInstructor = processDataForPublish(datas, dataAssets, username, null, data);
   // const publishPromises = [];
   for (const user of otherUsers) {
     // processDataForPublish needs to sleep for 1.5 secs each so avoid Promise.all
-    await processDataForPublish(datas, dataAssets, user.username, guidForInstructor, data);
+    processDataForPublish(datas, dataAssets, user.username, guidForInstructor, data);
   }
   // await Promise.all(publishPromises);
   await atOnce( mongodb.postData(datas), mongodb.postDataAsset(dataAssets) );
@@ -355,19 +344,8 @@ FilesystemController.populatePublishedDataToNewUser = async function(username) {
   const datas = (await mongodb.getDatas(publishedAssetGuids.map(a => a.guid)));
   datas.sort((x,y) => dates[x.guid] > dates[y.guid]);
   for (const d of datas) {
-    await timeout(1.5); //sleep milliseconds to ensure a unique guid
     const data = decrypt(d.data);
-    data._dateAdded = (new Date()).getTime();
-    data._forceUnique = uniqid();
-    const encryptedData = encrypt(data);
-    const guid = hash(encryptedData);
-
-    newDatas.push({
-      guid,
-      data: encryptedData
-    });
-    newAssets.push({
-      guid,
+    const processed = processDataAndAsset(data, {
       originalName: '',
       mimetype: 'application/json',
       lastChangedAt: (new Date()).getTime(),
@@ -376,9 +354,10 @@ FilesystemController.populatePublishedDataToNewUser = async function(username) {
       lastChangedBy: username,
       authorizedUsers: [],
       lastVersion: null,
-      firstVersion: guid,
       sourceOfPublish: d.guid
     });
+    newDatas.push(processed.data);
+    newAssets.push(processed.asset);
   }
   await atOnce( mongodb.postData(newDatas), mongodb.postDataAsset(newAssets) );
 };
