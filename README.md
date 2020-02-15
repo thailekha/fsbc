@@ -4,6 +4,20 @@
 # Notes
 - Do not disconnect connections to hyperledger/mongodb. Leave them on.
 
+# Setup
+```
+export ATLAS_CREDS=mongodb://127.0.0.1:27017/test
+export DATAENCRYPT_SECRET=notproduction
+```
+
+# Mongodb container
+```
+sudo docker run --rm -p 127.0.0.1:27017:27017 mongo
+
+show collections
+db.dataassets.find
+```
+
 # Windows guide
 ## Build composer box:
 ```
@@ -27,14 +41,6 @@ vagrant destroy -f dev-machine
 vagrant up dev-machine
 vagrant ssh dev-machine
     cd /mnt/vagrant && make singlenode
-```
-
-# Mongodb container
-```
-sudo docker run --rm -p 127.0.0.1:27017:27017 mongo
-
-show collections
-db.dataassets.find
 ```
 
 # Remote load test - both backend and DB

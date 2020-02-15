@@ -36,7 +36,7 @@ end
 
 def install_node(config)
   config.vm.provision "shell", inline: <<-SHELL
-    curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash -
+    curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -
     apt-get install -y nodejs
   SHELL
 end

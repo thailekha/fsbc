@@ -34,7 +34,7 @@ class MongoDBController {
     if (this.isConnected) {
       return;
     }
-    const db = await mongoose.connect(this.uri, { useNewUrlParser: true, useFindAndModify: false, useCreateIndex: true });
+    const db = await mongoose.connect(this.uri, { useNewUrlParser: true, useFindAndModify: false, useCreateIndex: true, useUnifiedTopology: true });
     this.isConnected = db.connections[0].readyState;
   }
 
