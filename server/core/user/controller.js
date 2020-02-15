@@ -1,7 +1,7 @@
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 // const blockchainController = require('../blockchain/controller');
-const MongoDBController = require('../data/mongodb');
+const MongoDBController = require('../data/mongodb/mongodb');
 const statusCodes = require('http-status-codes');
 const utils = require('../utils');
 

@@ -1,4 +1,4 @@
-const MongoDBController = require('../core/data/mongodb');
+const MongoDBController = require('../core/data/mongodb/mongodb');
 
 async function flush() {
   try {

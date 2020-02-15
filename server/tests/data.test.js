@@ -5,7 +5,7 @@ const app = require('../bin/www');
 const expect = chai.expect;
 const uniqid = require('uniqid');
 const statusCodes = require('http-status-codes');
-const MongoDBController = require('../core/data/mongodb');
+const MongoDBController = require('../core/data/mongodb/mongodb');
 const utils = require('../core/utils');
 const testUtils = require('./testUtils');
 

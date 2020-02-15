@@ -1,20 +1,15 @@
 digraph g {
-    expressRouter -> userIndex
-    expressRouter -> filesystemIndex
+    userIndexController[label="user index/controller"]
+    filesystemIndexController[label="filesystem index/controller"]
 
-    filesystemIndex -> filesystemController
-    // filesystemController -> blockchainController
+    expressRouter -> userIndexController -> dataController
+    expressRouter -> filesystemIndexController -> dataController
+
+    dataController -> mongodb
+    dataController -> bigchaindb
+    dataController -> fabric
+    dataController -> "Amazon Quantum\nLedger Database"
+
     blockchainController -> hyperledgerComposer
     blockchainController -> ethereum
-    filesystemController -> dataController
-    dataController -> storageController
-    dataController -> dataAssetController -> mongodb
-    // storageController -> ipfs
-    storageController -> mongodb
-
-    userIndex -> userController
-    // userController -> blockchainController
-    userController -> mongodb
-
-    ipfs
 }

@@ -1,5 +1,4 @@
-// // const ipfs = require('./ipfs');
-// const MongoDBController = require('./mongodb');
+// const MongoDBController = require('./mongodb/mongodb');
 
 // function constructController(storageMedium) {
 //   const StorageController = {};

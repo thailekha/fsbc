@@ -1,8 +1,8 @@
 const mongoose = require('mongoose');
-const User = require('./mongodbSchemas/user');
-const DataAsset = require('./mongodbSchemas/dataAsset');
-const Data = require('./mongodbSchemas/data');
-const utils = require('../utils');
+const User = require('./schemas/user');
+const DataAsset = require('./schemas/dataAsset');
+const Data = require('./schemas/data');
+const utils = require('../../utils');
 
 const validDataAssetAccess = username => [
   {

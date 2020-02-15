@@ -1,5 +1,5 @@
 const fsController = require('../filesystem/controller');
-const MongoDBController = require('../data/mongodb');
+const MongoDBController = require('../data/mongodb/mongodb');
 const utils = require('../utils');
 const urlParse = require('url-parse-lax');
 const isUrl = require('is-absolute-url');

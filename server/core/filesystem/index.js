@@ -1,7 +1,7 @@
 const router = require('express').Router();
 const validator = require('../../middlewares/joi-validate');
 const schemas = require('./schemas');
-const MongoDBController = require('../data/mongodb');
+const MongoDBController = require('../data/mongodb/mongodb');
 
 const fsController = require('./controller')(new MongoDBController(process.env.ATLAS_CREDS));
 
