@@ -1,0 +1,11 @@
+windows:
+  - options:
+    - mouse on
+  - name: sample-four-panes
+    root: ~/work/fsbc-thai
+    layout: tiled
+    panes:
+      - vagrant ssh backend -- -t "cd /mnt/vagrant; bash"
+      - sleep 2 && vagrant ssh backend -- -t "cd /mnt/vagrant; bash"
+      - sleep 3 && vagrant ssh backend -- -t "cd /mnt/vagrant; bash"
+      - sleep 4 && vagrant ssh backend -- -t "cd /mnt/vagrant; bash"
